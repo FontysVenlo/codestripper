@@ -6,6 +6,8 @@ import pytest
 
 from codestripper.utils import FileUtils
 
+test_data_dir = Path(__file__).parent.absolute()
+
 
 @pytest.mark.parametrize(
     "included, excluded, recursive, expected",
@@ -22,7 +24,8 @@ from codestripper.utils import FileUtils
         (["data/test1*"], ["**/*.txt"], True, ["data/test1.java"])
     ]
 )
-def test_glob(included: List[str], excluded: List[str], recursive: bool, expected: List[Path]):
+def test_glob(included: List[str], excluded: List[str], recursive: bool, expected: List[Path], monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_data_dir)
     files = FileUtils(included, excluded, recursive).get_matching_files()
     print(files)
     print(expected)
