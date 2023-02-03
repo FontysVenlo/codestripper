@@ -1,10 +1,9 @@
 from pathlib import Path
 
 from codestripper.code_stripper import CodeStripper
+from codestripper.utils import FileUtils
 
 if __name__ == '__main__':
-    path = Path("Phonebook.java")
-    with open(path) as file:
-        content = file.read()
-    stripper = CodeStripper(content)
+    files = FileUtils(["*.java"], [], recursive=False)
+    stripper = CodeStripper("")
     print(stripper.strip())
