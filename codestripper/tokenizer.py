@@ -1,6 +1,6 @@
 import re
 from collections import deque
-from typing import Optional, Set, Dict, Callable, List, Pattern, Type, Tuple, Deque
+from typing import Optional, Set, Dict, Callable, List, Pattern, Type, Tuple, Deque, Iterable
 
 from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, RemoveOpenTag, RemoveCloseTag, \
     UncommentOpenTag, LegacyOpenTag, LegacyCloseTag, RemoveTag, AddTag
@@ -32,7 +32,7 @@ def calculate_mappings(comment) -> Tuple[CreateTagMapping, Pattern]:
         if issubclass(tag, SingleTag):
             for idx, reg in enumerate(tag.regex):
                 name = f"{tag.__name__}{idx}"
-                mappings[name] = lambda data, tag=tag: tag(data)
+                mappings[name] = lambda data, constructor=tag: constructor(data)
                 strings.append(f"(?P<{name}>{comment}{reg})")
         else:
             print(f"Mapping is ony for single tags: {tag}")
@@ -41,19 +41,20 @@ def calculate_mappings(comment) -> Tuple[CreateTagMapping, Pattern]:
 
 
 class Tokenizer:
-    mappings: Dict[str, Callable[[str, int, re.Match, Type], SingleTag]] = {}
+    mappings: CreateTagMapping = {}
     regex: Pattern = {}
+    comment: Optional[str] = None
 
     def __init__(self, content: str, comment: str) -> None:
         self.content = content
-        self.comment = comment
         self.ordered_tags: Deque[Tag] = deque()
         self.open_stack: List[RangeOpenTag] = []
         self.range_stack: Dict[int, Optional[List[Tag]]] = {}
-        if len(Tokenizer.mappings) == 0:
-            Tokenizer.mappings, Tokenizer.regex = calculate_mappings(self.comment)
+        if len(Tokenizer.mappings) == 0 or Tokenizer.comment != comment:
+            Tokenizer.mappings, Tokenizer.regex = calculate_mappings(comment)
+            Tokenizer.comment = comment
 
-    def tokenize(self) -> Deque[Tag]:
+    def tokenize(self) -> Iterable[Tag]:
         line_number = 1
         line_start = 0
         for match in self.regex.finditer(self.content):

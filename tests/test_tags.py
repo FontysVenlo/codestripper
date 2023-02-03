@@ -5,13 +5,9 @@ from codestripper.tokenizer import Tokenizer
 
 
 def test_comment():
-    # Reset the mappings, rest of application uses "//" as comment
-    Tokenizer.mappings = {}
     case = "#cs:add:test"
     expected = "test"
     output = CodeStripper(case, "#").strip()
-    # Reset the mappings, rest of application uses "//" as comment
-    Tokenizer.mappings = {}
     assert output == expected, "Different comments can be used"
 
 
