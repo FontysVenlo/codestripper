@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "codestripper-test"
+name = "codestripper"
 version = "0.1.0"
 description = ""
 authors = ["Bonajo <m.bonajo@fontys.nl>"]
 readme = "README.md"
-packages = [{include = "codestripper_test"}]
+packages = [{include = "codestripper"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
