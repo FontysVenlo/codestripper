@@ -9,7 +9,7 @@ def test_remove_range():
     """
     expected = """
     """
-    output = CodeStripper(case).strip()
+    output = CodeStripper(case, "//").strip()
     assert output == expected, "Remove should remove all"
 
 
@@ -19,5 +19,5 @@ def test_remove_single():
     """
     expected = """
     """
-    output = CodeStripper(case).strip()
+    output = CodeStripper(case, "//").strip()
     assert output == expected, "Remove should remove single line"

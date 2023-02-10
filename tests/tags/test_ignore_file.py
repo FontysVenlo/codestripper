@@ -10,11 +10,14 @@ def test_invalid_tag():
     test line
     //cs:ignore
     """
-    with pytest.raises(InvalidTagError):
-        CodeStripper(case).strip()
+    with pytest.raises(InvalidTagError) as ex:
+        CodeStripper(case, "//").strip()
+    message = str(ex)
+    print(message)
+    assert message.__contains__("IgnoreFileTag") and message.__contains__("3")
 
 
 def test_ignored_file():
     case = "//cs:ignore"
     with pytest.raises(IgnoreFileError):
-        CodeStripper(case).strip()
+        CodeStripper(case, "//").strip()

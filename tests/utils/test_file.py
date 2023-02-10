@@ -4,7 +4,7 @@ from typing import List
 
 import pytest
 
-from codestripper.utils import FileUtils
+from codestripper.utils import FileUtils, get_working_directory
 
 test_data_dir = Path(__file__).parent.absolute()
 
@@ -26,9 +26,14 @@ test_data_dir = Path(__file__).parent.absolute()
 )
 def test_glob(included: List[str], excluded: List[str], recursive: bool, expected: List[Path], monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(test_data_dir)
-    files = FileUtils(included, excluded, recursive).get_matching_files()
-    print(files)
-    print(expected)
+    files = FileUtils(included, excluded, working_directory=None, recursive=recursive).get_matching_files()
     difference = set(files) ^ set(expected)
     assert not difference
 
+
+def test_cwd(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_data_dir)
+    cwd = get_working_directory("data/recursive")
+    files = FileUtils(["*.java"], working_directory=cwd).get_matching_files()
+    print(files)
+    assert len(files) == 1

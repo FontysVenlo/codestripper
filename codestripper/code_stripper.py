@@ -1,5 +1,7 @@
+import logging
+import os.path
 from pathlib import Path
-from typing import Optional, Union, Deque
+from typing import Optional, Union, Deque, Iterable
 
 from codestripper.errors import InvalidTagError
 from codestripper.tags import IgnoreFileError, UncommentRangeTag
@@ -7,9 +9,32 @@ from codestripper.tags.tag import Tag, RangeTag
 from codestripper.tokenizer import Tokenizer
 
 
+logger = logging.getLogger("codestripper")
+
+
+def strip_files(files: Iterable[Path], working_directory: str, comment: str = "//", output: Union[Path, str] = "out", dry_run: bool = False) -> None:
+    for file in files:
+        with open(os.path.join(working_directory, file), 'r') as handle:
+            content = handle.read()
+        if content is not None:
+            try:
+                stripped = CodeStripper(content, comment).strip()
+            except IgnoreFileError:
+                logger.info(f"File '{file} is ignore, because of ignore tag'")
+                break
+            except (InvalidTagError, AssertionError) as ex:
+                logger.error(ex)
+                break
+            if dry_run:
+                logger.info(stripped)
+            else:
+                with open(os.path.join(os.getcwd(), output, file), 'w') as handle:
+                    handle.write(content)
+
+
 class CodeStripper:
 
-    def __init__(self, content: str, comment: str = "//") -> None:
+    def __init__(self, content: str, comment: str) -> None:
         self.content = content
         self.comment = comment
 
@@ -55,8 +80,6 @@ class CodeStripper:
         processed = tag.execute(self.content)
         old_size = tag.end - tag.start
         new_size = len(processed) if processed is not None else 0
-        # print(f"({tag}) {processed}: size: {old_size} -> {new_size}")
-        # print(repr(self.content[(tag.start+offset):(tag.start+new_size+offset)]))
         before = self.content[:tag.start]
 
         # Return of None means remove the complete line

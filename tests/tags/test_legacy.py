@@ -9,7 +9,7 @@ def test_legacy_should_remove():
     """
     expected = """
     """
-    output = CodeStripper(case).strip()
+    output = CodeStripper(case, "//").strip()
     assert output == expected, "Legacy should remove contents inbetween tags"
 
 
@@ -23,5 +23,5 @@ def test_legacy_should_replace():
     start
     end
     """
-    output = CodeStripper(case).strip()
+    output = CodeStripper(case, "//").strip()
     assert output == expected, "Legacy should replace on start and end"

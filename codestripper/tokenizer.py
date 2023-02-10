@@ -6,7 +6,7 @@ from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, Remo
     UncommentOpenTag, LegacyOpenTag, LegacyCloseTag, RemoveTag, AddTag
 from codestripper.tags.tag import SingleTag, Tag, RangeOpenTag, RangeCloseTag, RangeTag, TagData
 
-tags: Set[type] = {
+default_tags: Set[SingleTag] = {
     IgnoreFileTag,
     RemoveOpenTag,
     RemoveCloseTag,
@@ -25,17 +25,14 @@ CreateTagLambda = Callable[[TagData, Type], SingleTag]
 CreateTagMapping = Dict[str, CreateTagLambda]
 
 
-def calculate_mappings(comment) -> Tuple[CreateTagMapping, Pattern]:
+def calculate_mappings(tags: Set[SingleTag], comment: str) -> Tuple[CreateTagMapping, Pattern]:
     strings = [r"(?P<newline>\n)"]
     mappings = {}
     for tag in tags:
-        if issubclass(tag, SingleTag):
-            for idx, reg in enumerate(tag.regex):
-                name = f"{tag.__name__}{idx}"
-                mappings[name] = lambda data, constructor=tag: constructor(data)
-                strings.append(f"(?P<{name}>{comment}{reg})")
-        else:
-            print(f"Mapping is ony for single tags: {tag}")
+        for idx, reg in enumerate(tag.regex):
+            name = f"{tag.__name__}{idx}"
+            mappings[name] = lambda data, constructor=tag: constructor(data)
+            strings.append(f"(?P<{name}>{comment}{reg})")
     regex = re.compile("|".join(strings), flags=re.MULTILINE)
     return mappings, regex
 
@@ -51,7 +48,7 @@ class Tokenizer:
         self.open_stack: List[RangeOpenTag] = []
         self.range_stack: Dict[int, Optional[List[Tag]]] = {}
         if len(Tokenizer.mappings) == 0 or Tokenizer.comment != comment:
-            Tokenizer.mappings, Tokenizer.regex = calculate_mappings(comment)
+            Tokenizer.mappings, Tokenizer.regex = calculate_mappings(default_tags, comment)
             Tokenizer.comment = comment
 
     def tokenize(self) -> Iterable[Tag]:
@@ -85,7 +82,7 @@ class Tokenizer:
                 raise AssertionError("Stack is empty")
             range_open = self.open_stack.pop()
             if range_open.parent != tag.parent:
-                raise ValueError(f"Cannot match closing tag: {tag} to open tag: {range_open}")
+                raise AssertionError(f"Cannot match closing tag: {tag} to open tag: {range_open}")
             range_tag: RangeTag = tag.parent(range_open, tag)
             index = len(self.open_stack)
             embedded = self.range_stack.pop(index + 1, None)
