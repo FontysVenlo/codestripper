@@ -36,24 +36,12 @@ class FileUtils:
             files.add(file)
         return files
 
-    def __convert_to_paths_dictionary(self, file_names: Iterable[str], recursive=True) -> Dict[Path, None]:
-        """Convert the file name(s) that are passed as CLI arguments to file paths (can contain GLOB)"""
-        files = {}
-        for file in self.__get_normalized_files(file_names, Path(os.getcwd()), recursive):
-            files[file] = None
-        return files
-
     def get_matching_files(self) -> Iterable[Path]:
         """Get files that fullfill requirements, match included and do not match excluded"""
-        included_files = self.__convert_to_paths_dictionary(self.included, self.recursive)
+        included_files = self.__convert_to_paths_set(self.included, self.recursive)
         self.logger.debug(f"Included files are: {included_files}")
 
-        excluded_files = self.__convert_to_paths_dictionary(self.excluded, self.recursive)
+        excluded_files = self.__convert_to_paths_set(self.excluded, self.recursive)
         self.logger.debug(f"Excluded files are: {excluded_files}")
 
-        files = []
-        for file in included_files.copy():
-            if file not in excluded_files:
-                files.append(file)
-
-        return files
+        return included_files - excluded_files
