@@ -37,3 +37,9 @@ def test_cwd(monkeypatch: pytest.MonkeyPatch):
     files = FileUtils(["*.java"], working_directory=cwd).get_matching_files()
     print(files)
     assert len(files) == 1
+
+
+def test_non_relative(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_data_dir)
+    with pytest.raises(ValueError) as ex:
+        get_working_directory("/etc/passwd")

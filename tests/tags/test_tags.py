@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -124,3 +125,10 @@ def test_invalid_tag():
         CodeStripper(case, "!!").strip()
     tokenizer.default_tags = default_tags
     assert "InvalidRangeTag" in str(ex)
+
+
+def test_data():
+    regex = re.compile("test")
+    match = regex.search("test")
+    data = TagData("test", 0, 0, match, "test")
+    assert str(data).__contains__("test")
