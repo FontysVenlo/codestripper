@@ -13,18 +13,18 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("include", nargs="+", help="files to include for code stripping (multiple files or glob)")
     # Add optional arguments
     parser.add_argument("-x", "--exclude", action="append",
-                        help="files to include for code stripping (multiple files or glob)", default=[])
+                        help="files to include for code stripping (glob)", default=[])
     parser.add_argument("-c", "--comment", action="store",
                         help="comment symbol(s) for the given language", default="//")
     parser.add_argument("-v", "--verbosity", action="count", help="increase output verbosity", default=0)
     parser.add_argument("-o", "--output", action="store",
-                        help="the output directory to store the stripped files", default="out")
+                        help="output directory to store the stripped files", default="out")
     parser.add_argument("-r", "--recursive", action="store_false",
-                        help="use recursive globs for include/exclude")
+                        help="do NOT use recursive globs for include/exclude")
     parser.add_argument("-d", "--dry-run", action="store_true",
-                        help="dry run of the codestripper, no output is written", default=False)
+                        help="dry run of the codestripper, no output is written")
     parser.add_argument("-w", "--working-directory", action="store",
-                        help="set the working directory, relative to pwd", default=os.getcwd())
+                        help="set the working directory for include/exclude", default=os.getcwd())
 
 
 def main(arguments: List[str]) -> None:
