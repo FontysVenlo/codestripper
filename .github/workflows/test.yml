@@ -42,6 +42,7 @@ jobs:
       run: |
         COVERAGE=$(grep -oP 'line-rate="\K(1|0.\d+)' coverage.xml | head -n 1)
         echo "$COVERAGE > 0.95" | bc -l
-        
+    - name: Type checker
+      run: poetry run mypy codestripper
     
 
