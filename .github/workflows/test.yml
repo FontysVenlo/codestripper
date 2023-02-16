@@ -36,8 +36,6 @@ jobs:
     - name: Install dependencies
       if: steps.cached-poetry-venv.outputs.cache-hit != 'true'
       run: poetry install
-    - name: test
-      run: ls -la
     - name: Run tests
       run: poetry run pytest --cov --cov-report=xml
         
