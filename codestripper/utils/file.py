@@ -2,15 +2,15 @@ import glob
 import os
 import logging
 from pathlib import Path
-from typing import Dict, Generator, Iterable, Set, Union
+from typing import Dict, Generator, Iterable, Set, Union, List
 
 
 def get_working_directory(working_directory: Union[str, None]) -> str:
     if working_directory is not None:
         if os.path.isabs(working_directory):
-            cwd = Path(working_directory)
+            cwd = working_directory
         else:
-            cwd = os.path.join(os.getcwd(), working_directory)
+            cwd = str(os.path.join(os.getcwd(), working_directory))
         Path(cwd).relative_to(os.getcwd())
         return cwd
     else:
@@ -28,7 +28,7 @@ class FileUtils:
         self.logger = logging.getLogger(f"{logger}.fileutils")
         self.included = included
         if excluded is None:
-            self.excluded = []
+            self.excluded: Iterable[str] = []
         else:
             self.excluded = excluded
         self.recursive = recursive
@@ -36,7 +36,7 @@ class FileUtils:
         self.cwd = get_working_directory(working_directory)
 
     def __get_normalized_files(self, file_names: Iterable[str], relative_to: Path, recursive=True) -> \
-            Generator[Path, None, None]:
+            Generator[str, None, None]:
         for file_name in file_names:
             path = Path(os.path.join(self.cwd, file_name)).resolve().as_posix()
             for file in glob.glob(path, recursive=recursive):
@@ -44,14 +44,14 @@ class FileUtils:
                 if tmp.is_file():
                     yield tmp.as_posix()
 
-    def __convert_to_paths_set(self, file_names: Iterable[str], recursive=True) -> Set[Path]:
+    def __convert_to_paths_set(self, file_names: Iterable[str], recursive=True) -> Set[str]:
         """Convert the file name(s) that are passed as CLI arguments to file paths (can contain GLOB)"""
         files = set()
         for file in self.__get_normalized_files(file_names, Path(self.cwd), recursive):
             files.add(file)
         return files
 
-    def get_matching_files(self) -> Iterable[Path]:
+    def get_matching_files(self) -> Iterable[str]:
         """Get files that fullfill requirements, match included and do not match excluded"""
         os.chdir(self.cwd)
         included_files = self.__convert_to_paths_set(self.included, self.recursive)

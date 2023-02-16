@@ -1,13 +1,12 @@
 import re
-from typing import Optional, Set, Dict, Callable, List, Pattern, Tuple
+from typing import Optional, Set, Dict, Callable, List, Pattern, Tuple, Type
 
 from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, RemoveOpenTag, RemoveCloseTag, \
     UncommentOpenTag, LegacyOpenTag, LegacyCloseTag, RemoveTag, AddTag
 from codestripper.tags.tag import SingleTag, Tag, RangeOpenTag, RangeCloseTag, RangeTag, TagData
 
-# PyTypeChecker doesn't recognise that these are all SingleTags
-# noinspection PyTypeChecker
-default_tags: Set[SingleTag] = {
+
+default_tags: Set[Type[SingleTag]] = {
     IgnoreFileTag,
     RemoveOpenTag,
     RemoveCloseTag,
@@ -26,7 +25,7 @@ CreateTagLambda = Callable[[TagData], SingleTag]
 CreateTagMapping = Dict[str, CreateTagLambda]
 
 
-def calculate_mappings(tags: Set[SingleTag], comment: str) -> Tuple[CreateTagMapping, Pattern]:
+def calculate_mappings(tags: Set[Type[SingleTag]], comment: str) -> Tuple[CreateTagMapping, Pattern]:
     strings = [r"(?P<newline>\n)"]
     mappings = {}
     for tag in tags:
@@ -35,12 +34,12 @@ def calculate_mappings(tags: Set[SingleTag], comment: str) -> Tuple[CreateTagMap
             mappings[name] = lambda data, constructor=tag: constructor(data)
             strings.append(f"(?P<{name}>{comment}{reg})")
     regex = re.compile("|".join(strings), flags=re.MULTILINE)
-    return mappings, regex
+    return mappings, regex  # type: ignore
 
 
 class Tokenizer:
     mappings: CreateTagMapping = {}
-    regex: Pattern = {}
+    regex: Pattern = re.compile("")
     comment: Optional[str] = None
 
     def __init__(self, content: str, comment: str) -> None:
@@ -61,9 +60,11 @@ class Tokenizer:
             if kind == "newline":
                 line_number += 1
                 line_start = column_end
+            elif kind is None:
+                continue  # All groups should be named
             else:
-                # print(f"kind: {kind}, value: {value}, line: {line_number}({line_start}):{column_start}-{column_end}")
-                data: TagData = TagData(self.content[line_start:column_end], line_number, line_start, match, kind)
+                data: TagData = TagData(self.content[line_start:column_end], line_number,
+                                        line_start, match, kind)
                 tag = Tokenizer.mappings[kind](data)
                 self.__handle_tag(tag)
         if len(self.open_stack) != 0 or len(self.range_stack) != 0:
@@ -73,7 +74,7 @@ class Tokenizer:
     def __add_range_stack(self, index: int, tag: Tag) -> None:
         if index not in self.range_stack:
             self.range_stack[index] = []
-        self.range_stack[index].append(tag)
+        self.range_stack[index].append(tag)  # type: ignore
 
     def __handle_tag(self, tag: Tag) -> None:
         if isinstance(tag, RangeOpenTag):
@@ -95,7 +96,7 @@ class Tokenizer:
             else:
                 self.ordered_tags.append(range_tag)
         else:
-            index: int = len(self.open_stack)
+            index: int = len(self.open_stack)  # type: ignore
             if index > 0:
                 self.__add_range_stack(index, tag)
             else:

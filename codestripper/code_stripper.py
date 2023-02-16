@@ -12,11 +12,11 @@ from codestripper.utils import get_working_directory
 logger = logging.getLogger("codestripper")
 
 
-def strip_files(files: Iterable[Path], working_directory: Union[str, None] = None, comment: str = "//",
-                output: Union[Path, str] = "out", dry_run: bool = False) -> List[Path]:
+def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, comment: str = "//",
+                output: Union[Path, str] = "out", dry_run: bool = False) -> List[str]:
     cwd = get_working_directory(working_directory)
     out = os.path.join(os.getcwd(), output)
-    stripped_files: List[Path] = []
+    stripped_files: List[str] = []
     for file in files:
         with open(os.path.join(cwd, file), 'r') as handle:
             content = handle.read()

@@ -60,7 +60,7 @@ class Tag:
 
 
 class SingleTag(Tag):
-    regex: List[Pattern] = []
+    regex: List[str] = []
 
     def __init__(self, data: TagData) -> None:
         super().__init__()

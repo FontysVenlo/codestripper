@@ -27,13 +27,13 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
                         help="set the working directory, relative to pwd", default=os.getcwd())
 
 
-def main(args: List[str]) -> None:
+def main(arguments: List[str]) -> None:
     """Parse the command line arguments, find all the files and strip the found files"""
 
     # Handle command line arguments
     parser = argparse.ArgumentParser()
     add_commandline_arguments(parser)
-    args = parser.parse_args(args)
+    args = parser.parse_args(arguments)
 
     # Setup the logger
     logger_name = "codestripper"

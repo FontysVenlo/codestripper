@@ -1,4 +1,5 @@
 import logging
+from typing import Dict
 
 
 class ColourFormatter(logging.Formatter):
@@ -13,14 +14,14 @@ class ColourFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format = "%(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+    format_log = "%(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
 
-    FORMATS = {
-        logging.DEBUG: grey + format + reset,
-        logging.INFO: grey + format + reset,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
+    FORMATS: Dict[int, str] = {
+        logging.DEBUG: grey + format_log + reset,
+        logging.INFO: grey + format_log + reset,
+        logging.WARNING: yellow + format_log + reset,
+        logging.ERROR: red + format_log + reset,
+        logging.CRITICAL: bold_red + format_log + reset
     }
 
     def format(self, record: logging.LogRecord) -> str:
@@ -29,8 +30,8 @@ class ColourFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-def set_logger_level(logger: str, verbosity: int = 0, add_colours: bool = True) -> None:
-    logger = logging.getLogger(logger)
+def set_logger_level(logger_name: str, verbosity: int = 0, add_colours: bool = True) -> None:
+    logger = logging.getLogger(logger_name)
     handler = logging.StreamHandler()
     if add_colours:
         handler.setFormatter(ColourFormatter())
