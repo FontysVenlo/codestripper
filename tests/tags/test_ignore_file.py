@@ -13,7 +13,6 @@ def test_invalid_tag():
     with pytest.raises(InvalidTagError) as ex:
         CodeStripper(case, "//").strip()
     message = str(ex)
-    print(message)
     assert message.__contains__("IgnoreFileTag") and message.__contains__("3")
 
 

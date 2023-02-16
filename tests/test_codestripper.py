@@ -26,7 +26,7 @@ def test_project(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
         assert len(stripped) == 6 and not tags_in_content
 
 
-def test_project_out(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
+def test_project_out(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["**/*.java", "pom.xml"], working_directory="testproject").get_matching_files()
     stripped_files = strip_files(files, "testproject", "//", "out", False)

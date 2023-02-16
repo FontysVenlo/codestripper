@@ -35,7 +35,6 @@ def test_cwd(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(test_data_dir)
     cwd = get_working_directory("data/recursive")
     files = FileUtils(["*.java"], working_directory=cwd).get_matching_files()
-    print(files)
     assert len(files) == 1
 
 

@@ -23,7 +23,6 @@ def test_colour_formatter(level: int, name: str, control: bool):
     contains_name = name in formatted
     contains_control = '\x1b[' in formatted
     control_correct = contains_control if control else not contains_control
-    print(contains_control, contains_name)
     assert (contains_name and control_correct), "Colour formatter should format correctly"
 
 
