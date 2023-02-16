@@ -5,7 +5,7 @@ from codestripper.tags.tag import SingleTag, TagData
 
 
 class IgnoreFileTag(SingleTag):
-    regex = [r'cs:ignore']
+    regex = r'cs:ignore'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(data)

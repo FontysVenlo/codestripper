@@ -31,4 +31,15 @@ def test_replace_valid():
     asd//cs:replace
     """
     output = CodeStripper(case, "//").strip()
-    assert output == expected, "Replace should only replace with valid tag"
+    assert output == expected, "Only valid replace tag should work"
+
+
+def test_replace_symbol():
+    case = """
+    asd//cs:replace://TODO: test
+    """
+    expected = """
+    //TODO: test
+    """
+    output = CodeStripper(case, "//").strip()
+    assert output == expected, "Replace with ':' should work"

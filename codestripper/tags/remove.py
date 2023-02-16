@@ -5,7 +5,7 @@ from codestripper.tags.tag import RangeTag, RangeOpenTag, RangeCloseTag, TagData
 
 class RemoveTag(SingleTag):
 
-    regex = [r'cs:remove\s*?$']
+    regex = r'cs:remove\s*?$'
 
     def __init__(self, data: TagData):
         super().__init__(data)
@@ -15,14 +15,14 @@ class RemoveTag(SingleTag):
 
 
 class RemoveOpenTag(RangeOpenTag):
-    regex = [r'cs:remove:start(.*)?']
+    regex = r'cs:remove:start(.*)?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(RemoveRangeTag, data)
 
 
 class RemoveCloseTag(RangeCloseTag):
-    regex = [r'cs:remove:end(.*)?']
+    regex = r'cs:remove:end(.*)?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(RemoveRangeTag, data)

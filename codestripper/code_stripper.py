@@ -46,9 +46,6 @@ class CodeStripper:
     def strip(self) -> str:
 
         if self.content is not None:
-            # Make sure that the correct comment is used
-            # Previous CodeStripper might have set a different comment
-            Tag.comment = self.comment
             tokenizer = Tokenizer(self.content, self.comment)
             tags = tokenizer.tokenize()
             self.__traverse(tags)

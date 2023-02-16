@@ -12,14 +12,14 @@ from codestripper.tokenizer import Tokenizer, calculate_mappings
 
 
 class InvalidOpenTag(RangeOpenTag):
-    regex = [r'cs:invalid:start(.*)?']
+    regex = r'cs:invalid:start.*?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(InvalidRangeTag, data)
 
 
 class InvalidCloseTag(RangeCloseTag):
-    regex = [r'cs:invalid:end(.*)?']
+    regex = r'cs:invalid:end.*?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(InvalidRangeTag, data)
@@ -128,7 +128,5 @@ def test_invalid_tag():
 
 
 def test_data():
-    regex = re.compile("test")
-    match = regex.search("test")
-    data = TagData("test", 0, 0, match, "test")
+    data = TagData("test", 0, 0, 0, 0, 0, "test", "//")
     assert str(data).__contains__("test")

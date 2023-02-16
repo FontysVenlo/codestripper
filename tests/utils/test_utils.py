@@ -8,10 +8,8 @@ from codestripper.tags.utils import calculate_replacement
 
 
 def test_replacement():
-    regex = re.compile("test")
-    match = regex.search("test")
-    data = TagData("test", 0, 0, match, "test")
+    data = data = TagData("test", 0, 0, 0, 0, 0, "test", "//")
     tag = AddTag(data)
     with pytest.raises(AssertionError) as ex:
-        calculate_replacement("test", ":", tag)
+        calculate_replacement("test", tag)
 

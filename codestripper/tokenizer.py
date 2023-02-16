@@ -29,10 +29,9 @@ def calculate_mappings(tags: Set[Type[SingleTag]], comment: str) -> Tuple[Create
     strings = [r"(?P<newline>\n)"]
     mappings = {}
     for tag in tags:
-        for idx, reg in enumerate(tag.regex):
-            name = f"{tag.__name__}{idx}"
-            mappings[name] = lambda data, constructor=tag: constructor(data)
-            strings.append(f"(?P<{name}>{comment}{reg})")
+        name = f"{tag.__name__}"
+        mappings[name] = lambda data, constructor=tag: constructor(data)
+        strings.append(f"(?P<{name}>{comment}{tag.regex})")
     regex = re.compile("|".join(strings), flags=re.MULTILINE)
     return mappings, regex  # type: ignore
 
@@ -40,7 +39,7 @@ def calculate_mappings(tags: Set[Type[SingleTag]], comment: str) -> Tuple[Create
 class Tokenizer:
     mappings: CreateTagMapping = {}
     regex: Pattern = re.compile("")
-    comment: Optional[str] = None
+    comment: str = ""
 
     def __init__(self, content: str, comment: str) -> None:
         self.content = content
@@ -63,8 +62,14 @@ class Tokenizer:
             elif kind is None:
                 continue  # All groups should be named
             else:
-                data: TagData = TagData(self.content[line_start:column_end], line_number,
-                                        line_start, match, kind)
+                data: TagData = TagData(line=self.content[line_start:column_end],
+                                        line_number=line_number,
+                                        line_start=line_start,
+                                        line_end=match.end(),
+                                        match_start=match.start() - line_start,
+                                        match_end=match.end() - line_start,
+                                        matched_regex=self.content[match.start():match.end()],
+                                        comment=self.comment)
                 tag = Tokenizer.mappings[kind](data)
                 self.__handle_tag(tag)
         if len(self.open_stack) != 0 or len(self.range_stack) != 0:

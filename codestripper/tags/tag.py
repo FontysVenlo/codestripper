@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Type, Union, List, Pattern, Iterable
+from typing import Type, Union, List, Pattern, Iterable, Optional
 
 
 @dataclass
@@ -8,20 +8,11 @@ class TagData:
     line: str
     line_number: int
     line_start: int
-    match: re.Match
+    line_end: int
+    match_start: int
+    match_end: int
     matched_regex: str
-
-    @property
-    def match_start(self):
-        return self.match.start()
-
-    @property
-    def match_end(self):
-        return self.match.end()
-
-    @property
-    def line_end(self):
-        return self.match.end()
+    comment: str
 
     def __repr__(self) -> str:
         return (f"{self.line}, line ({self.line_number}): {self.line_start}:{self.line_end},"
@@ -29,15 +20,13 @@ class TagData:
 
 
 class Tag:
-    comment = "//"
-
     def __init__(self) -> None:
         self._offset = 0
 
     def is_valid(self) -> bool:
         return True
 
-    def execute(self, content: str) -> Union[str, None]:
+    def execute(self, content: str) -> Optional[str]:
         return None
 
     @property
@@ -60,7 +49,7 @@ class Tag:
 
 
 class SingleTag(Tag):
-    regex: List[str] = []
+    regex: str = ""
 
     def __init__(self, data: TagData) -> None:
         super().__init__()
