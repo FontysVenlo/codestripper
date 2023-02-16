@@ -35,7 +35,7 @@ jobs:
         key: venv-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
     - name: Install dependencies
       if: steps.cached-poetry-venv.outputs.cache-hit != 'true'
-      run: poetry install -no-interaction
+      run: poetry install
     - name: Run tests
       run: poetry run pytest --cov --cov-report=xml
     - name: Upload coverage report
