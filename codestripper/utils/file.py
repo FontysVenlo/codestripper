@@ -8,12 +8,11 @@ from typing import Dict, Generator, Iterable, Set, Union
 def get_working_directory(working_directory: Union[str, None]) -> str:
     if working_directory is not None:
         if os.path.isabs(working_directory):
-            raise AssertionError("Working directory may only be a relative path")
+            cwd = Path(working_directory)
         else:
             cwd = os.path.join(os.getcwd(), working_directory)
-            if not Path(cwd).relative_to(os.getcwd()):
-                raise AssertionError("Working directory may only be a relative path")
-            return cwd
+        Path(cwd).relative_to(os.getcwd())
+        return cwd
     else:
         return os.getcwd()
 
@@ -34,21 +33,16 @@ class FileUtils:
             self.excluded = excluded
         self.recursive = recursive
         self.old_cwd = os.getcwd()
-        if working_directory is None:
-            self.cwd = os.getcwd()
-        else:
-            self.cwd = working_directory
+        self.cwd = get_working_directory(working_directory)
 
     def __get_normalized_files(self, file_names: Iterable[str], relative_to: Path, recursive=True) -> \
             Generator[Path, None, None]:
         for file_name in file_names:
-            for file in glob.glob(Path(os.path.join(self.cwd, file_name)).resolve().as_posix(), recursive=recursive):
-                try:
-                    tmp = Path(file).relative_to(relative_to)
-                    if tmp.is_file():
-                        yield tmp.as_posix()
-                except ValueError:
-                    self.logger.error(f"{file} is invalid, must be relative to {relative_to}")
+            path = Path(os.path.join(self.cwd, file_name)).resolve().as_posix()
+            for file in glob.glob(path, recursive=recursive):
+                tmp = Path(file).relative_to(relative_to)
+                if tmp.is_file():
+                    yield tmp.as_posix()
 
     def __convert_to_paths_set(self, file_names: Iterable[str], recursive=True) -> Set[Path]:
         """Convert the file name(s) that are passed as CLI arguments to file paths (can contain GLOB)"""
