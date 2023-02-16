@@ -1,35 +1,40 @@
 import logging
 import os.path
 from pathlib import Path
-from typing import Optional, Union, Deque, Iterable
+from typing import Union, Iterable, List
 
 from codestripper.errors import InvalidTagError
-from codestripper.tags import IgnoreFileError, UncommentRangeTag
+from codestripper.tags import IgnoreFileError
 from codestripper.tags.tag import Tag, RangeTag
 from codestripper.tokenizer import Tokenizer
-
+from codestripper.utils import get_working_directory
 
 logger = logging.getLogger("codestripper")
 
 
-def strip_files(files: Iterable[Path], working_directory: str, comment: str = "//", output: Union[Path, str] = "out", dry_run: bool = False) -> None:
+def strip_files(files: Iterable[Path], working_directory: Union[str, None] = None, comment: str = "//",
+                output: Union[Path, str] = "out", dry_run: bool = False) -> List[Path]:
+    cwd = get_working_directory(working_directory)
+    out = os.path.join(os.getcwd(), output)
+    stripped_files: List[Path] = []
     for file in files:
-        with open(os.path.join(working_directory, file), 'r') as handle:
+        with open(os.path.join(cwd, file), 'r') as handle:
             content = handle.read()
         if content is not None:
             try:
                 stripped = CodeStripper(content, comment).strip()
             except IgnoreFileError:
                 logger.info(f"File '{file} is ignore, because of ignore tag'")
-                break
-            except (InvalidTagError, AssertionError) as ex:
-                logger.error(ex)
-                break
+                continue
+            stripped_files.append(file)
             if dry_run:
                 logger.info(stripped)
             else:
-                with open(os.path.join(os.getcwd(), output, file), 'w') as handle:
-                    handle.write(content)
+                path = os.path.join(out, file)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, 'w+') as handle:
+                    handle.write(stripped)
+    return stripped_files
 
 
 class CodeStripper:
@@ -41,21 +46,15 @@ class CodeStripper:
     def strip(self) -> str:
 
         if self.content is not None:
-            # Hack for now
+            # Make sure that the correct comment is used
+            # Previous CodeStripper might have set a different comment
             Tag.comment = self.comment
             tokenizer = Tokenizer(self.content, self.comment)
             tags = tokenizer.tokenize()
             self.__traverse(tags)
         return self.content
-            # try:
-            #     self.__traverse(tags)
-            # except IgnoreFileError as ignored:
-            #     print(f"File is ignored, because of IgnoreTag")
-            # except InvalidTagError as invalid:
-            #     print(invalid)
-            # print(self.content)
 
-    def __traverse(self, tags: Deque[Tag], offset=0) -> int:
+    def __traverse(self, tags: List[Tag], offset=0) -> int:
         old_offset = offset
         if len(tags) == 0:
             return offset - old_offset
