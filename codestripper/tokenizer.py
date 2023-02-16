@@ -1,11 +1,12 @@
 import re
-from collections import deque
-from typing import Optional, Set, Dict, Callable, List, Pattern, Type, Tuple, Deque, Iterable
+from typing import Optional, Set, Dict, Callable, List, Pattern, Tuple
 
 from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, RemoveOpenTag, RemoveCloseTag, \
     UncommentOpenTag, LegacyOpenTag, LegacyCloseTag, RemoveTag, AddTag
 from codestripper.tags.tag import SingleTag, Tag, RangeOpenTag, RangeCloseTag, RangeTag, TagData
 
+# PyTypeChecker doesn't recognise that these are all SingleTags
+# noinspection PyTypeChecker
 default_tags: Set[SingleTag] = {
     IgnoreFileTag,
     RemoveOpenTag,
@@ -20,7 +21,7 @@ default_tags: Set[SingleTag] = {
 }
 
 # Type for lambda that creates a tag based on the type
-CreateTagLambda = Callable[[TagData, Type], SingleTag]
+CreateTagLambda = Callable[[TagData], SingleTag]
 # Type for mapping of name to CreateTagLambda
 CreateTagMapping = Dict[str, CreateTagLambda]
 
@@ -44,14 +45,14 @@ class Tokenizer:
 
     def __init__(self, content: str, comment: str) -> None:
         self.content = content
-        self.ordered_tags: Deque[Tag] = deque()
+        self.ordered_tags: List[Tag] = []
         self.open_stack: List[RangeOpenTag] = []
         self.range_stack: Dict[int, Optional[List[Tag]]] = {}
         if len(Tokenizer.mappings) == 0 or Tokenizer.comment != comment:
             Tokenizer.mappings, Tokenizer.regex = calculate_mappings(default_tags, comment)
             Tokenizer.comment = comment
 
-    def tokenize(self) -> Iterable[Tag]:
+    def tokenize(self) -> List[Tag]:
         line_number = 1
         line_start = 0
         for match in self.regex.finditer(self.content):
