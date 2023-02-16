@@ -1,7 +1,6 @@
 import re
-from collections import deque
 from dataclasses import dataclass
-from typing import Type, Union, List, Pattern, Iterable, Deque
+from typing import Type, Union, List, Pattern, Iterable
 
 
 @dataclass
@@ -24,8 +23,9 @@ class TagData:
     def line_end(self):
         return self.match.end()
 
-    def __str__(self) -> str:
-        return f"{self.line}, line ({self.line_number}): {self.line_start}:{self.line_end}, match: {self.match_start}:{self.match_end}"
+    def __repr__(self) -> str:
+        return (f"{self.line}, line ({self.line_number}): {self.line_start}:{self.line_end},"
+                f"match: {self.match_start}:{self.match_end}")
 
 
 class Tag:
@@ -79,7 +79,7 @@ class SingleTag(Tag):
 
 
 class RangeOpenTag(SingleTag):
-    
+
     def __init__(self, parent: Type, data: TagData) -> None:
         super().__init__(data)
         self.parent = parent
@@ -98,11 +98,8 @@ class RangeTag(Tag):
         super().__init__()
         self.open_tag = open_tag
         self.close_tag = close_tag
-        self.tags: Deque[Tag] = deque()
+        self.tags: List[Tag] = []
         self._inset = 0
-
-    def add_tag(self, tag: Tag) -> None:
-        self.tags.append(tag)
 
     def add_tags(self, tags: Iterable[Tag]) -> None:
         self.tags.extend(tags)
