@@ -140,7 +140,7 @@ public class Test {
 
 ## Adding a new tag
 
-It is possible to add custom tags. There a two types of tags: `SingleTag` that works only on one line and `RangeTag` that works on a range of lines. Tags are defined as follows:
+It is possible to add custom tags. There a two types of tags: `SingleTag` that works on one line only and `RangeTag` that works on a range of lines. Tags are defined as follows:
 
 ```mermaid
 classDiagram
@@ -179,7 +179,7 @@ The idea is that every tag has the following methods:
 - `is_valid`: whether the tag is valid
 - `execute`: handle the text for this tag
 
-`RangeTag`s work in the following way:
+`RangeTag` work in the following way:
 
 - `RangeOpenTag`: Specifies the open regex and handles the opening line. Defines the type of parent it belongs to (so that the tokenizer can match open and close tag)
 - `RangeCloseTag`: Specifies the close regex and handles the closing line. Defines the type of parent it belongs to (so that the tokenizer can match open and close tag)
@@ -191,7 +191,7 @@ Create a custom tag:
 2. Depending on if you create a `SingleTag` or `RangeTag`
   - SingleTag:
 ```python
-class AddTag(SingleTag):
+class TestTag(SingleTag):
     regex = r'<regex>' # Regex that should match the tag
 
     def __init__(self, data: TagData) -> None:
@@ -232,12 +232,14 @@ class TestRangeTag(RangeTag):
     def execute(self, content: str) -> Union[str, None]:
         # Manipulate lines between the tags
 ```
-3. Add the new tag(s) to the `default_tags` in the `tokenizer`
+3. Add the new tag(s) to the `default_tags` in the `tokenizer`,
 ```python
 default_tags: Set[Type[SingleTag]] = {
     IgnoreFileTag,
     RemoveOpenTag,
     ...,
-    AddTag
+    TestTag,
+    TestOpenTag
 }
 ```
+> :warning: **Only the `SingleTag`(s) need to be added, not the `RangeTag`** 
