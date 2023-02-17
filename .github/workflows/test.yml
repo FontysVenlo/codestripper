@@ -37,7 +37,13 @@ jobs:
       if: steps.cached-poetry-venv.outputs.cache-hit != 'true'
       run: poetry install
     - name: Run tests
-      run: poetry run pytest --cov --cov-report=xml
+      run: poetry run pytest --cov --cov-report=xml --junitxml=tests.xml
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action/composite@v2
+      if: always()
+      with:
+        files: |
+          tests.xml
     - name: Check coverage greater than 95%
       run: |
         COVERAGE=$(grep -oP 'line-rate="\K(1|0.\d+)' coverage.xml | head -n 1)
