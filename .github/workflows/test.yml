@@ -56,6 +56,8 @@ jobs:
         indicators: true
         output: both
         thresholds: '90 95'
+    - name: Output Code Coverage (Python version ${{ matrix.python-version }})
+      run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
     - name: Type checker
       run: poetry run mypy codestripper
     
