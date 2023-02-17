@@ -153,11 +153,19 @@ classDiagram
         <<Abstract>>
         +offset: int
         +start: int
+        +end: int
         +is_valid()*: bool
         +execute()*: Optional[str]
     }
     class SingleTag{
         +regex: str
+        +param_start: int
+        +param_end: int
+        +regex_start: int
+        +regex_end: int
+        +leading_characters: str
+        +parameter: str
+        +whitespace: str
         +SingleTag(data: TagData)
     }
     class RangeOpenTag{
@@ -170,6 +178,8 @@ classDiagram
         +inset: int
         +start: int
         +end: int
+        +open_tag: RangeOpenTag
+        +close_tag: RangeCloseTag
         +RangeTag(open_tag: RangeOpenTag, close_tag: RangeCloseTag)
         +add_tags(tags: Iterable[Tag])
     }
@@ -233,6 +243,7 @@ class TestRangeTag(RangeTag):
         # Manipulate lines between the tags
 ```
 3. Add the new tag(s) to the `default_tags` in the `tokenizer`,
+
 ```python
 default_tags: Set[Type[SingleTag]] = {
     IgnoreFileTag,
