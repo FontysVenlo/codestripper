@@ -128,5 +128,5 @@ def test_invalid_tag():
 
 
 def test_data():
-    data = TagData("test", 0, 0, 0, 0, 0, "test", "//")
+    data = TagData("test", 0, 0, 0, 0, 0, 0, 0, "//")
     assert str(data).__contains__("test")

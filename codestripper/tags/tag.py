@@ -9,14 +9,15 @@ class TagData:
     line_number: int
     line_start: int
     line_end: int
-    match_start: int
-    match_end: int
-    matched_regex: str
+    regex_start: int
+    regex_end: int
+    parameter_start: int
+    parameter_end: int
     comment: str
 
     def __repr__(self) -> str:
         return (f"{self.line}, line ({self.line_number}): {self.line_start}:{self.line_end},"
-                f"match: {self.match_start}:{self.match_end}")
+                f"match: {self.regex_start}:{self.regex_end}")
 
 
 class Tag:
@@ -49,6 +50,7 @@ class Tag:
 
 
 class SingleTag(Tag):
+    whitespace_regex = re.compile(r"\s+")
     regex: str = ""
 
     def __init__(self, data: TagData) -> None:
@@ -65,6 +67,35 @@ class SingleTag(Tag):
     @property
     def end(self) -> int:
         return self.data.line_end + self.offset
+
+    @property
+    def param_start(self) -> int:
+        return self.data.parameter_start
+
+    @property
+    def param_end(self) -> int:
+        return self.data.parameter_end
+
+    @property
+    def regex_start(self) -> int:
+        return self.data.regex_start
+
+    @property
+    def regex_end(self) -> int:
+        return self.data.regex_end
+
+    @property
+    def leading_characters(self) -> str:
+        return self.data.line[:self.regex_start]
+
+    @property
+    def parameter(self) -> str:
+        return self.data.line[self.param_start:self.param_end]
+
+    @property
+    def whitespace(self) -> str:
+        match = self.whitespace_regex.match(self.leading_characters)
+        return match.group() if match else ""
 
 
 class RangeOpenTag(SingleTag):

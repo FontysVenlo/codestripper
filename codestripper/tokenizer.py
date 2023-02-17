@@ -5,7 +5,6 @@ from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, Remo
     UncommentOpenTag, LegacyOpenTag, LegacyCloseTag, RemoveTag, AddTag
 from codestripper.tags.tag import SingleTag, Tag, RangeOpenTag, RangeCloseTag, RangeTag, TagData
 
-
 default_tags: Set[Type[SingleTag]] = {
     IgnoreFileTag,
     RemoveOpenTag,
@@ -49,27 +48,28 @@ class Tokenizer:
         if len(Tokenizer.mappings) == 0 or Tokenizer.comment != comment:
             Tokenizer.mappings, Tokenizer.regex = calculate_mappings(default_tags, comment)
             Tokenizer.comment = comment
+        self.group_count = self.regex.groups
 
     def tokenize(self) -> List[Tag]:
         line_number = 1
         line_start = 0
         for match in self.regex.finditer(self.content):
             kind = match.lastgroup
-            column_end = match.end()
+            # Parameter should directly follow the encompassing regex
+            # Type ignore: we have a match, so we must have a lastindex
+            param_index = match.lastindex + 1  # type: ignore
+            parameter: Optional[Tuple[int, int]] = None
+            if param_index < len(match.regs):
+                parameter = match.regs[param_index]
+
+            line_end = match.end()
             if kind == "newline":
                 line_number += 1
-                line_start = column_end
+                line_start = line_end
             elif kind is None:
                 continue  # All groups should be named
             else:
-                data: TagData = TagData(line=self.content[line_start:column_end],
-                                        line_number=line_number,
-                                        line_start=line_start,
-                                        line_end=match.end(),
-                                        match_start=match.start() - line_start,
-                                        match_end=match.end() - line_start,
-                                        matched_regex=self.content[match.start():match.end()],
-                                        comment=self.comment)
+                data = self.__create_tag_data(self.content, line_number, line_start, line_end, match, parameter)
                 tag = Tokenizer.mappings[kind](data)
                 self.__handle_tag(tag)
         if len(self.open_stack) != 0 or len(self.range_stack) != 0:
@@ -106,3 +106,27 @@ class Tokenizer:
                 self.__add_range_stack(index, tag)
             else:
                 self.ordered_tags.append(tag)
+
+    def __create_tag_data(self, content: str, line_number: int, line_start: int, line_end: int,
+                          match: re.Match, param: Optional[Tuple[int, int]] = None) -> TagData:
+        # All matches are based on column values in the complete content
+        # We want the match to be an index in the current line
+        line = content[line_start:line_end]
+        command_start = match.start() - line_start
+        command_end = match.end() - line_start
+        if param is not None and param[0] != -1 and param[1] != -1:
+            parameter_start = param[0] - line_start
+            parameter_end = param[1] - line_start
+        else:
+            parameter_start = command_end
+            parameter_end = command_start
+        parameter = line[parameter_start:parameter_end]
+        return TagData(line=line,
+                       line_number=line_number,
+                       line_start=line_start,
+                       line_end=line_end,
+                       regex_start=command_start,
+                       regex_end=command_end,
+                       parameter_start=parameter_start,
+                       parameter_end=parameter_end,
+                       comment=self.comment)

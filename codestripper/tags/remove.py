@@ -1,5 +1,3 @@
-from typing import Union
-
 from codestripper.tags.tag import RangeTag, RangeOpenTag, RangeCloseTag, TagData, SingleTag
 
 
@@ -9,9 +7,6 @@ class RemoveTag(SingleTag):
 
     def __init__(self, data: TagData):
         super().__init__(data)
-
-    def execute(self, content: str) -> Union[str, None]:
-        return None
 
 
 class RemoveOpenTag(RangeOpenTag):
