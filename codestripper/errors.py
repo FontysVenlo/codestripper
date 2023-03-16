@@ -6,6 +6,9 @@ class InvalidTagError(Exception):
     def __init__(self, tag: Tag):
         self.tag = tag
 
+    def __str__(self):
+        return self.__repr__()
+
     def __repr__(self):
         line_number = -1
         if isinstance(self.tag, RangeTag):
