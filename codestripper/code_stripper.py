@@ -24,7 +24,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
             try:
                 stripped = CodeStripper(content, comment).strip()
             except IgnoreFileError:
-                logger.info(f"File '{file} is ignore, because of ignore tag'")
+                logger.info(f"File '{file} is ignored, because of ignore tag'")
                 continue
             stripped_files.append(file)
             if dry_run:
