@@ -37,14 +37,13 @@ jobs:
       run: poetry install
     - name: Run tests
       run: poetry run pytest --cov --cov-report=xml --junitxml=tests.xml
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: success() || failure()
       with:
-        files: |
-          tests.xml
-        check_name: Test Results (Python version ${{ matrix.python-version }})
-        comment_mode: off
+        name: Test Results (Python version ${{ matrix.python-version }})
+        path: tests.xml
+        reporter: jest-junit
     - name: Code Coverage Report
       uses: irongut/CodeCoverageSummary@v1.3.0
       with:
