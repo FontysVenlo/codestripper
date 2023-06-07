@@ -11,7 +11,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  test:
     strategy:
       fail-fast: false
       matrix:
@@ -50,20 +50,74 @@ jobs:
         name: Test Results (Python version ${{ matrix.python-version }})
         path: tests.xml
         reporter: java-junit
-    - name: Code Coverage Report
-      uses: irongut/CodeCoverageSummary@v1.3.0
-      with:
-        filename: coverage.xml
-        fail_below_min: true
-        format: markdown
-        hide_branch_rate: false
-        hide_complexity: true
-        indicators: true
-        output: both
-        thresholds: '90 95'
-    - name: Output Code Coverage (Python version ${{ matrix.python-version }})
-      run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
-    - name: Type checker
-      run: poetry run mypy codestripper
-    
+        
+  coverage:
+    strategy:
+      matrix:
+        python-version: [ "3.8", "3.9", "3.10", "3.11" ]
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached venv
+        id: cached-poetry-venv
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ matrix.python-version }}-{{ runner.os }}-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry-venv.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction
+      - name: Run tests
+        run: poetry run pytest --cov --cov-report=xml --junitxml=tests.xml
+      - name: Code Coverage Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage.xml
+          fail_below_min: true
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: '90 95'
+      - name: Output Code Coverage (Python version ${{ matrix.python-version }})
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
 
+  typecheck:
+    strategy:
+      matrix:
+        python-version: [ "3.8", "3.9", "3.10", "3.11" ]
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached venv
+        id: cached-poetry-venv
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ matrix.python-version }}-{{ runner.os }}-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry-venv.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction
+      - name: Type checker
+        run: poetry run mypy codestripper
