@@ -1,5 +1,9 @@
 name: Test
 
+defaults:
+  run:
+    shell: bash
+
 on:
   push:
     branches: [ "main" ]
@@ -31,12 +35,14 @@ jobs:
       uses: actions/cache@v3
       with:
         path: .venv
-        key: venv-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+        key: venv-${{ matrix.python-version }}-{{ matrix.os }}-${{ hashFiles('poetry.lock') }}
     - name: Install dependencies
       if: steps.cached-poetry-venv.outputs.cache-hit != 'true'
-      run: poetry install
+      run: poetry install --no-interaction
     - name: Run tests
-      run: poetry run pytest --cov --cov-report=xml --junitxml=tests.xml
+      run: |
+        source $VENV
+        poetry run pytest --cov --cov-report=xml --junitxml=tests.xml
     - name: Test Report
       uses: dorny/test-reporter@v1
       if: success() || failure()
