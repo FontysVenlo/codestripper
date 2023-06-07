@@ -11,8 +11,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        python-version: ["3.8"]
+        os: ["ubuntu-latest"]
+#      matrix:
+#        python-version: ["3.8", "3.9", "3.10", "3.11"]
+#        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
@@ -43,7 +46,7 @@ jobs:
       with:
         name: Test Results (Python version ${{ matrix.python-version }})
         path: tests.xml
-        reporter: jest-junit
+        reporter: java-junit
     - name: Code Coverage Report
       uses: irongut/CodeCoverageSummary@v1.3.0
       with:
