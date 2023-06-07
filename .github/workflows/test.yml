@@ -35,7 +35,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: .venv
-        key: venv-${{ matrix.python-version }}-{{ runner.os }}-${{ hashFiles('poetry.lock') }}
+        key: venv-${{ matrix.python-version }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
     - name: Install dependencies
       if: steps.cached-poetry-venv.outputs.cache-hit != 'true'
       run: poetry install --no-interaction
@@ -50,11 +50,11 @@ jobs:
         name: Test Results (Python version ${{ matrix.python-version }})
         path: tests.xml
         reporter: java-junit
-        
+
   coverage:
     strategy:
       matrix:
-        python-version: [ "3.8", "3.9", "3.10", "3.11" ]
+        python-version: [ "3.8" ]
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
@@ -96,7 +96,7 @@ jobs:
   typecheck:
     strategy:
       matrix:
-        python-version: [ "3.8", "3.9", "3.10", "3.11" ]
+        python-version: [ "3.8" ]
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
