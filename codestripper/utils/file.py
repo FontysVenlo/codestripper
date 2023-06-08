@@ -38,11 +38,11 @@ class FileUtils:
     def __get_normalized_files(self, file_names: Iterable[str], relative_to: Path, recursive=True) -> \
             Generator[str, None, None]:
         for file_name in file_names:
-            path = Path(os.path.join(self.cwd, file_name)).resolve().as_posix()
+            path = os.path.join(self.cwd, file_name)
             for file in glob.glob(path, recursive=recursive):
                 tmp = Path(file).relative_to(relative_to)
                 if tmp.is_file():
-                    yield tmp.as_posix()
+                    yield str(tmp)
 
     def __convert_to_paths_set(self, file_names: Iterable[str], recursive=True) -> Set[str]:
         """Convert the file name(s) that are passed as CLI arguments to file paths (can contain GLOB)"""
