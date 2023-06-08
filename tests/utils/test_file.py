@@ -26,8 +26,9 @@ test_data_dir = Path(__file__).parent.absolute()
 )
 def test_glob(included: List[str], excluded: List[str], recursive: bool, expected: List[Path], monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(test_data_dir)
+    expected_paths = [str(Path(path)) for path in expected]
     files = FileUtils(included, excluded, working_directory=None, recursive=recursive).get_matching_files()
-    difference = set(files) ^ set(expected)
+    difference = set(files) ^ set(expected_paths)
     assert not difference
 
 
