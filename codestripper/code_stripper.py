@@ -1,5 +1,6 @@
 import logging
 import os.path
+import shutil
 from pathlib import Path
 from typing import Union, Iterable, List
 
@@ -16,6 +17,8 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                 output: Union[Path, str] = "out", dry_run: bool = False) -> List[str]:
     cwd = get_working_directory(working_directory)
     out = os.path.join(os.getcwd(), output)
+    if os.path.isdir(out):
+        shutil.rmtree(out)
     stripped_files: List[str] = []
     for file in files:
         with open(os.path.join(cwd, file), 'r') as handle:
