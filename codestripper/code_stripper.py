@@ -3,7 +3,7 @@ import os.path
 from pathlib import Path
 from typing import Union, Iterable, List
 
-from codestripper.errors import InvalidTagError
+from codestripper.errors import InvalidTagError, TokenizerError
 from codestripper.tags import IgnoreFileError
 from codestripper.tags.tag import Tag, RangeTag
 from codestripper.tokenizer import Tokenizer
@@ -24,8 +24,14 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
             try:
                 stripped = CodeStripper(content, comment).strip()
             except IgnoreFileError:
-                logger.info(f"File '{file} is ignored, because of ignore tag'")
+                logger.info(f"File '{file}' is ignored, because of ignore tag")
                 continue
+            except TokenizerError as te:
+                logger.error(f"{file}:{te.line_number}: {te.message}")
+                break
+            except InvalidTagError as ie:
+                logger.error(f"{file}:{ie.line_number}: {ie.message}")
+                break
             stripped_files.append(file)
             if dry_run:
                 logger.info(stripped)
