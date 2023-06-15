@@ -6,14 +6,32 @@ class InvalidTagError(Exception):
     def __init__(self, tag: Tag):
         self.tag = tag
 
+    @property
+    def line_number(self) -> int:
+        if isinstance(self.tag, SingleTag):
+            return self.tag.data.line_number
+        return -1
+
+    @property
+    def message(self) -> str:
+        return self.__str__()
+
     def __str__(self):
         return self.__repr__()
 
     def __repr__(self):
-        line_number = -1
-        if isinstance(self.tag, RangeTag):
-            line_number = self.tag.open_tag.data.line_number
-        elif isinstance(self.tag, SingleTag):
-            line_number = self.tag.data.line_number
+        return f"Tag {self.tag.__class__.__name__} is invalid"
 
-        return f"Tag {self.tag.__class__.__name__} at line {line_number} is invalid"
+
+class TokenizerError(Exception):
+
+    def __init__(self, tag: Tag, message: str):
+        self.tag = tag
+        self.message = message
+
+    @property
+    def line_number(self) -> int:
+        if isinstance(self.tag, SingleTag):
+            return self.tag.data.line_number
+        else:
+            return -1

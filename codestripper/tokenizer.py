@@ -1,6 +1,7 @@
 import re
 from typing import Optional, Set, Dict, Callable, List, Pattern, Tuple, Type
 
+from codestripper.errors import TokenizerError
 from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, RemoveOpenTag, RemoveCloseTag, \
     UncommentOpenTag, LegacyOpenTag, LegacyCloseTag, RemoveTag, AddTag
 from codestripper.tags.tag import SingleTag, Tag, RangeOpenTag, RangeCloseTag, RangeTag, TagData
@@ -72,8 +73,11 @@ class Tokenizer:
                 data = self.__create_tag_data(self.content, line_number, line_start, line_end, match, parameter)
                 tag = Tokenizer.mappings[kind](data)
                 self.__handle_tag(tag)
-        if len(self.open_stack) != 0 or len(self.range_stack) != 0:
-            raise AssertionError("Stack not empty!")
+        if len(self.open_stack) != 0:
+            t = self.open_stack[0]
+            raise TokenizerError(t, f"There is still an unclosed {t.__class__.__name__} tag!")
+        # if len(self.range_stack) != 0:
+        #     raise TokenizerError(self.range_stack[0][0], f"")
         return self.ordered_tags
 
     def __add_range_stack(self, index: int, tag: Tag) -> None:
@@ -86,10 +90,10 @@ class Tokenizer:
             self.open_stack.append(tag)
         elif isinstance(tag, RangeCloseTag):
             if len(self.open_stack) == 0:
-                raise AssertionError("Stack is empty")
+                raise TokenizerError(tag, f"Cannot close tag {tag.__class__.__name__}, as there is no matching open tag")
             range_open = self.open_stack.pop()
             if range_open.parent != tag.parent:
-                raise AssertionError(f"Cannot match closing tag: {tag} to open tag: {range_open}")
+                raise TokenizerError(tag, f"Cannot match closing tag: {tag.__class__.__name__} to open tag: {range_open.__class__.__name__}")
             range_tag: RangeTag = tag.parent(range_open, tag)
             index = len(self.open_stack)
             embedded = self.range_stack.pop(index + 1, None)
