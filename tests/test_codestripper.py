@@ -75,3 +75,12 @@ def test_log_invalid_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixt
         strip_files(files, "files", "//", "out", True)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "InvalidTag.java" in errors[0] and "2" in errors[0]
+
+
+def test_project_out(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["**/*.java", "pom.xml"], working_directory="testproject").get_matching_files()
+    strip_files(files, "testproject", "//", "out", False)
+    files = FileUtils(["pom.xml"], working_directory="testproject").get_matching_files()
+    strip_files(files, "testproject", "//", "out", False)
+    assert not os.path.isdir(Path("out/src"))
