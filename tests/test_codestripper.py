@@ -40,3 +40,38 @@ def test_project_out(monkeypatch: pytest.MonkeyPatch):
                 break
     assert stripped
 
+
+def test_log_missing_close_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["MissingClose.java"], working_directory="files").get_matching_files()
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        strip_files(files, "files", "//", "out", True)
+        errors = [rec.message for rec in caplog.records]
+        assert len(errors) == 1 and "MissingClose.java" in errors[0] and "1" in errors[0]
+
+
+def test_log_wrong_close_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["WrongClose.java"], working_directory="files").get_matching_files()
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        strip_files(files, "files", "//", "out", True)
+        errors = [rec.message for rec in caplog.records]
+        assert len(errors) == 1 and "WrongClose.java" in errors[0] and "3" in errors[0]
+
+
+def test_log_missing_open_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["MissingOpen.java"], working_directory="files").get_matching_files()
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        strip_files(files, "files", "//", "out", True)
+        errors = [rec.message for rec in caplog.records]
+        assert len(errors) == 1 and "MissingOpen.java" in errors[0] and "1" in errors[0]
+
+
+def test_log_invalid_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["InvalidTag.java"], working_directory="files").get_matching_files()
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        strip_files(files, "files", "//", "out", True)
+        errors = [rec.message for rec in caplog.records]
+        assert len(errors) == 1 and "InvalidTag.java" in errors[0] and "2" in errors[0]

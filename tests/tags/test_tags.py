@@ -1,14 +1,9 @@
-import re
-from pathlib import Path
-
 import pytest
 
 from codestripper import tokenizer
 from codestripper.code_stripper import CodeStripper
-from codestripper.errors import InvalidTagError
-from codestripper.tags import RemoveRangeTag
-from codestripper.tags.tag import RangeOpenTag, Tag, SingleTag, TagData, RangeCloseTag, RangeTag
-from codestripper.tokenizer import Tokenizer, calculate_mappings
+from codestripper.errors import InvalidTagError, TokenizerError
+from codestripper.tags.tag import RangeOpenTag, TagData, RangeCloseTag, RangeTag
 
 
 class InvalidOpenTag(RangeOpenTag):
@@ -76,7 +71,7 @@ def test_missing_close_tag():
         test line
         //cs:remove:start
         """
-    with pytest.raises(AssertionError):
+    with pytest.raises(TokenizerError):
         CodeStripper(case, "//").strip()
 
 
@@ -87,7 +82,7 @@ def test_missing_close_tag_nested():
         //cs:remove:start
         //cs:remove:end
         """
-    with pytest.raises(AssertionError):
+    with pytest.raises(TokenizerError):
         CodeStripper(case, "//").strip()
 
 
@@ -96,7 +91,7 @@ def test_close_without_open():
         test line
         //cs:remove:end
         """
-    with pytest.raises(AssertionError):
+    with pytest.raises(TokenizerError):
         CodeStripper(case, "//").strip()
 
 
@@ -106,7 +101,7 @@ def test_mismatch_open_close():
         //cs:uncomment:start
         //cs:remove:end
         """
-    with pytest.raises(AssertionError):
+    with pytest.raises(TokenizerError):
         CodeStripper(case, "//").strip()
 
 
