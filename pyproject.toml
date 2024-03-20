@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "codestripper"
-version = "0.1.3"
+version = "0.1.4"
 description = "CodeStripper used to strip code from assignments"
 authors = ["Bonajo <m.bonajo@fontys.nl>"]
 maintainers = ["Bonajo <m.bonajo@fontys.nl>"]

@@ -14,7 +14,7 @@ logger = logging.getLogger("codestripper")
 
 
 def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, comment: str = "//",
-                output: Union[Path, str] = "out", dry_run: bool = False) -> List[str]:
+                output: Union[Path, str] = "out", dry_run: bool = False, fail_on_error: bool = False) -> List[str]:
     cwd = get_working_directory(working_directory)
     out = os.path.join(os.getcwd(), output)
     if os.path.isdir(out):
@@ -29,12 +29,13 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
             except IgnoreFileError:
                 logger.info(f"File '{file}' is ignored, because of ignore tag")
                 continue
-            except TokenizerError as te:
-                logger.error(f"{file}:{te.line_number}: {te.message}")
-                break
-            except InvalidTagError as ie:
-                logger.error(f"{file}:{ie.line_number}: {ie.message}")
-                break
+            except (TokenizerError, InvalidTagError) as ex:
+                message = f"{file}:{ex.line_number}: {ex.message}"
+                logger.error(message)
+                if fail_on_error:
+                    raise Exception(message)
+                else:
+                    break
             stripped_files.append(file)
             if dry_run:
                 logger.info(stripped)

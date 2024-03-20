@@ -24,6 +24,8 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
                         help="dry run of the codestripper, no output is written")
     parser.add_argument("-w", "--working-directory", action="store",
                         help="set the working directory for include/exclude", default=os.getcwd())
+    parser.add_argument("-e", "--fail-on-error", action="store_false",
+                        help="Fail if an error occurs during code stripping")
 
 
 def main() -> None:
@@ -42,4 +44,4 @@ def main() -> None:
     cwd = get_working_directory(args.working_directory)
     files = FileUtils(args.include, args.exclude, cwd, args.recursive, logger_name).get_matching_files()
     # Strip all the files
-    strip_files(files, cwd, args.comment, args.output, args.dry_run)
+    strip_files(files, cwd, args.comment, args.output, args.dry_run, args.fail_on_error)

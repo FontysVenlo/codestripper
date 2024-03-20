@@ -29,6 +29,7 @@ def test_add_without_replacement():
     output = CodeStripper(case, "//").strip()
     assert output == expected, "Add without replacement keeps whitelines"
 
+
 def test_add_with_content_before():
     case = """asd//cs:add:test"""
     expected = """asdtest"""
