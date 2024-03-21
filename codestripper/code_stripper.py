@@ -34,7 +34,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                 has_errors = True
                 message = f"{file}:{ex.line_number}: {ex.message}"
                 logger.error(message)
-                break
+                continue
             stripped_files.append(file)
             if dry_run:
                 logger.info(stripped)

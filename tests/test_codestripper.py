@@ -84,3 +84,24 @@ def test_project_out_removes(monkeypatch: pytest.MonkeyPatch):
     files = FileUtils(["pom.xml"], working_directory="testproject").get_matching_files()
     strip_files(files, "testproject", "//", "out", False)
     assert not os.path.isdir(Path("out/src"))
+
+
+def test_fail_on_error(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["**/*.java"], working_directory="files").get_matching_files()
+
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        with pytest.raises(Exception):
+            strip_files(files, "files", "//", "out", False, fail_on_error=True)
+            errors = [rec.message for rec in caplog.records]
+            assert len(errors) == 4
+
+
+def test_non_fail_on_error(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["**/*.java"], working_directory="files").get_matching_files()
+
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        strip_files(files, "files", "//", "out", False, fail_on_error=False)
+        errors = [rec.message for rec in caplog.records]
+        assert len(errors) == 4
