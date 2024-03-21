@@ -20,6 +20,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
     if os.path.isdir(out):
         shutil.rmtree(out)
     stripped_files: List[str] = []
+    has_errors: bool = False
     for file in files:
         with open(os.path.join(cwd, file), 'r') as handle:
             content = handle.read()
@@ -30,12 +31,10 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                 logger.info(f"File '{file}' is ignored, because of ignore tag")
                 continue
             except (TokenizerError, InvalidTagError) as ex:
+                has_errors = True
                 message = f"{file}:{ex.line_number}: {ex.message}"
                 logger.error(message)
-                if fail_on_error:
-                    raise Exception(message)
-                else:
-                    break
+                break
             stripped_files.append(file)
             if dry_run:
                 logger.info(stripped)
@@ -44,6 +43,8 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 with open(path, 'w+') as handle:
                     handle.write(stripped)
+    if has_errors and fail_on_error:
+        raise Exception("There were errors stripping some files, see log for details")
     return stripped_files
 
 
