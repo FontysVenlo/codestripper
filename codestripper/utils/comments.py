@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Dict
 
 
-@dataclass
+@dataclass(frozen=True)
 class Comment:
     open: str
     close: Optional[str] = None

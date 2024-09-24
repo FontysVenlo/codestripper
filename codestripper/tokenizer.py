@@ -38,6 +38,7 @@ def calculate_mappings(tags: Set[Type[SingleTag]], comment: Comment) -> Tuple[Cr
 
 
 class Tokenizer:
+    mapping_cache: Dict[str, Tuple[CreateTagMapping, Pattern]] = {}
     mappings: CreateTagMapping = {}
     regex: Pattern = re.compile("")
     comment: Comment
@@ -47,9 +48,11 @@ class Tokenizer:
         self.ordered_tags: List[Tag] = []
         self.open_stack: List[RangeOpenTag] = []
         self.range_stack: Dict[int, Optional[List[Tag]]] = {}
-        if len(Tokenizer.mappings) == 0 or Tokenizer.comment != comment:
-            Tokenizer.mappings, Tokenizer.regex = calculate_mappings(default_tags, comment)
-            Tokenizer.comment = comment
+        Tokenizer.comment = comment
+        if not str(comment) in Tokenizer.mapping_cache:
+            Tokenizer.mapping_cache[str(comment)] = calculate_mappings(default_tags, comment)
+        Tokenizer.mappings = Tokenizer.mapping_cache[str(comment)][0]
+        Tokenizer.regex = Tokenizer.mapping_cache[str(comment)][1]
         self.group_count = self.regex.groups
 
     def tokenize(self) -> List[Tag]:
