@@ -1,4 +1,5 @@
 from codestripper.code_stripper import CodeStripper
+from codestripper.utils.comments import Comment
 
 
 def test_uncomment_range():
@@ -12,7 +13,7 @@ def test_uncomment_range():
     test
      test2
     """
-    output = CodeStripper(case, "//").strip()
+    output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Uncomment should uncomment all, keeping whitespace"
 
 
@@ -27,5 +28,5 @@ def test_uncomment_without_comments():
     test
      test2
     """
-    output = CodeStripper(case, "//").strip()
+    output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Uncomment shouldn't process non-commented lines"

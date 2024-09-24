@@ -4,17 +4,18 @@ from codestripper import tokenizer
 from codestripper.code_stripper import CodeStripper
 from codestripper.errors import InvalidTagError, TokenizerError
 from codestripper.tags.tag import RangeOpenTag, TagData, RangeCloseTag, RangeTag
+from codestripper.utils.comments import Comment
 
 
 class InvalidOpenTag(RangeOpenTag):
-    regex = r'cs:invalid:start.*?'
+    regex = r'cs:invalid:start(.*)?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(InvalidRangeTag, data)
 
 
 class InvalidCloseTag(RangeCloseTag):
-    regex = r'cs:invalid:end.*?'
+    regex = r'cs:invalid:end(.*)?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(InvalidRangeTag, data)
@@ -32,7 +33,7 @@ class InvalidRangeTag(RangeTag):
 def test_comment():
     case = "#cs:add:test"
     expected = "test"
-    output = CodeStripper(case, "#").strip()
+    output = CodeStripper(case, Comment("#")).strip()
     assert output == expected, "Different comments can be used"
 
 
@@ -43,7 +44,7 @@ def test_nested_tags():
     //test2
     //cs:uncomment:end
     """
-    stripper = CodeStripper(case, "//")
+    stripper = CodeStripper(case, Comment("//"))
     output = stripper.strip()
 
     expected = """
@@ -58,7 +59,7 @@ def test_tag_end_file():
     //cs:uncomment:start
     //test2
     //cs:uncomment:end"""
-    stripper = CodeStripper(case, "//")
+    stripper = CodeStripper(case, Comment("//"))
     output = stripper.strip()
 
     expected = """
@@ -72,7 +73,7 @@ def test_missing_close_tag():
         //cs:remove:start
         """
     with pytest.raises(TokenizerError):
-        CodeStripper(case, "//").strip()
+        CodeStripper(case, Comment("//")).strip()
 
 
 def test_missing_close_tag_nested():
@@ -83,7 +84,7 @@ def test_missing_close_tag_nested():
         //cs:remove:end
         """
     with pytest.raises(TokenizerError):
-        CodeStripper(case, "//").strip()
+        CodeStripper(case, Comment("//")).strip()
 
 
 def test_close_without_open():
@@ -92,7 +93,7 @@ def test_close_without_open():
         //cs:remove:end
         """
     with pytest.raises(TokenizerError):
-        CodeStripper(case, "//").strip()
+        CodeStripper(case, Comment("//")).strip()
 
 
 def test_mismatch_open_close():
@@ -102,14 +103,14 @@ def test_mismatch_open_close():
         //cs:remove:end
         """
     with pytest.raises(TokenizerError):
-        CodeStripper(case, "//").strip()
+        CodeStripper(case, Comment("//")).strip()
 
 
 def test_invalid_tag():
     case = """
             test line
-            !!cs:invalid:start
-            !!cs:invalid:end
+            ^^cs:invalid:start
+            ^^cs:invalid:end
             """
     default_tags = tokenizer.default_tags
     tokenizer.default_tags = {
@@ -117,7 +118,7 @@ def test_invalid_tag():
         InvalidCloseTag
     }
     with pytest.raises(InvalidTagError) as ex:
-        CodeStripper(case, "!!").strip()
+        CodeStripper(case, Comment("^^")).strip()
     tokenizer.default_tags = default_tags
     assert "InvalidRangeTag" in str(ex)
 

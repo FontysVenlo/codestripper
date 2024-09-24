@@ -52,7 +52,7 @@ class FileUtils:
         return files
 
     def get_matching_files(self) -> Iterable[str]:
-        """Get files that fullfill requirements, match included and do not match excluded"""
+        """Get files that fulfill requirements, match included and do not match excluded"""
         os.chdir(self.cwd)
         included_files = self.__convert_to_paths_set(self.included, self.recursive)
         self.logger.debug(f"Included files are: {included_files}")

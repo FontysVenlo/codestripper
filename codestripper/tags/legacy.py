@@ -4,7 +4,7 @@ from codestripper.tags.tag import RangeTag, RangeOpenTag, RangeCloseTag, TagData
 
 
 class LegacyOpenTag(RangeOpenTag):
-    regex = r'Start Solution::replacewith::(.*?)$'
+    regex = r'Start Solution::replacewith::(.*)'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(LegacyRangeTag, data)
@@ -20,7 +20,7 @@ class LegacyOpenTag(RangeOpenTag):
 
 
 class LegacyCloseTag(RangeCloseTag):
-    regex = r'End Solution::replacewith::(.*?)$'
+    regex = r'End Solution::replacewith::(.*)'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(LegacyRangeTag, data)
