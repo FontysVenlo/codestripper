@@ -8,14 +8,14 @@ from codestripper.utils.comments import Comment
 
 
 class InvalidOpenTag(RangeOpenTag):
-    regex = r'cs:invalid:start.*?'
+    regex = r'cs:invalid:start(.*)?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(InvalidRangeTag, data)
 
 
 class InvalidCloseTag(RangeCloseTag):
-    regex = r'cs:invalid:end.*?'
+    regex = r'cs:invalid:end(.*)?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(InvalidRangeTag, data)
@@ -109,8 +109,8 @@ def test_mismatch_open_close():
 def test_invalid_tag():
     case = """
             test line
-            !!cs:invalid:start
-            !!cs:invalid:end
+            ^^cs:invalid:start
+            ^^cs:invalid:end
             """
     default_tags = tokenizer.default_tags
     tokenizer.default_tags = {
@@ -118,7 +118,7 @@ def test_invalid_tag():
         InvalidCloseTag
     }
     with pytest.raises(InvalidTagError) as ex:
-        CodeStripper(case, Comment("!!")).strip()
+        CodeStripper(case, Comment("^^")).strip()
     tokenizer.default_tags = default_tags
     assert "InvalidRangeTag" in str(ex)
 

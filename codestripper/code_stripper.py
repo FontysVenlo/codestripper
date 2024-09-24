@@ -14,8 +14,17 @@ from codestripper.utils.comments import comments_mapping, Comment
 logger = logging.getLogger("codestripper")
 
 
-def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, comment: str = "//",
+def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, * ,comments: List[str] = None,
                 output: Union[Path, str] = "out", dry_run: bool = False, fail_on_error: bool = False) -> List[str]:
+
+    if comments is not None:
+        for comment in comments:
+            parts = comment.split(":")
+            if len(parts) == 2:
+                comments_mapping[parts[0]] = Comment(parts[1])
+            else:
+                comments_mapping[parts[0]] = Comment(parts[1], parts[2])
+
     cwd = get_working_directory(working_directory)
     out = os.path.join(os.getcwd(), output)
     if os.path.isdir(out):

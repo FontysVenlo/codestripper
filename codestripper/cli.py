@@ -13,8 +13,8 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
     # Add optional arguments
     parser.add_argument("-x", "--exclude", action="append",
                         help="files to include for code stripping (glob)", default=[])
-    parser.add_argument("-c", "--comment", action="store",
-                        help="comment symbol(s) for the given language", default="//")
+    parser.add_argument("-c", "--comment", action="append",
+                        help="comment symbol(s) for the given language, usage: <extension>:<comment> (e.g. .java://")
     parser.add_argument("-v", "--verbosity", action="count", help="increase output verbosity", default=0)
     parser.add_argument("-o", "--output", action="store",
                         help="output directory to store the stripped files", default="out")
@@ -44,4 +44,6 @@ def main() -> None:
     cwd = get_working_directory(args.working_directory)
     files = FileUtils(args.include, args.exclude, cwd, args.recursive, logger_name).get_matching_files()
     # Strip all the files
-    strip_files(files, cwd, args.comment, args.output, args.dry_run, args.fail_on_error)
+
+    strip_files(files, cwd, comments=args.comment, output=args.output, dry_run=args.dry_run,
+                fail_on_error=args.fail_on_error)
