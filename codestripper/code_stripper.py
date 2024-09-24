@@ -2,7 +2,7 @@ import logging
 import os.path
 import shutil
 from pathlib import Path
-from typing import Union, Iterable, List
+from typing import Union, Iterable, List, Optional
 
 from codestripper.errors import InvalidTagError, TokenizerError
 from codestripper.tags import IgnoreFileError
@@ -14,7 +14,7 @@ from codestripper.utils.comments import comments_mapping, Comment
 logger = logging.getLogger("codestripper")
 
 
-def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, * ,comments: List[str] = None,
+def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, * ,comments: Optional[List[str]] = None,
                 output: Union[Path, str] = "out", dry_run: bool = False, fail_on_error: bool = False) -> List[str]:
 
     if comments is not None:
