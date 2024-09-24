@@ -17,6 +17,20 @@ def test_add_should_add():
     assert output == expected, "Add should add the replacement"
 
 
+def test_add_should_add_closing():
+    case = """
+    public class AssessmentResult {
+        <!--cs:add://TODO-->
+
+    """
+    expected = """
+    public class AssessmentResult {
+        //TODO
+
+    """
+    output = CodeStripper(case, Comment("<!--", "-->")).strip()
+    assert output == expected, "Add should add the replacement"
+
 def test_add_valid():
     case = "//cs:add"
     expected = "//cs:add"

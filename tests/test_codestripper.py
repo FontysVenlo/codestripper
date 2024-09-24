@@ -40,11 +40,26 @@ def test_project_out(monkeypatch: pytest.MonkeyPatch):
                 break
     assert stripped
 
+
+def test_strip_pom(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["pom.xml"], working_directory="testproject").get_matching_files()
+    stripped_files = strip_files(files, "testproject", output="out")
+    stripped = len(stripped_files) == 1
+    regex = re.compile("<!--cs:")
+    for file in stripped_files:
+        with open(os.path.join(os.getcwd(), "out", file), 'r') as handle:
+            content = handle.read()
+            if regex.search(content) is not None:
+                stripped = False
+                break
+    assert stripped
+
+
 def test_project_with_custom_comment(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["**/*.java", "pom.xml", "**/*.test"], working_directory="testproject").get_matching_files()
     stripped_files = strip_files(files, "testproject", comments=[".test:!!"], output="out")
-    stripped = len(stripped_files) == 6
     content: str = ""
     for file in stripped_files:
         if file == "test.test":

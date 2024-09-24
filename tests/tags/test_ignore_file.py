@@ -21,3 +21,8 @@ def test_ignored_file():
     case = "//cs:ignore"
     with pytest.raises(IgnoreFileError):
         CodeStripper(case, Comment("//")).strip()
+
+def test_ignored_file_closing():
+    case = "<!--cs:ignore-->"
+    with pytest.raises(IgnoreFileError):
+        CodeStripper(case, Comment("<!--", "-->")).strip()

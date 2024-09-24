@@ -32,7 +32,10 @@ def calculate_mappings(tags: Set[Type[SingleTag]], comment: Comment) -> Tuple[Cr
     for tag in tags:
         name = f"{tag.__name__}"
         mappings[name] = lambda data, constructor=tag: constructor(data)
-        strings.append(f"(?P<{name}>{re.escape(comment.open)}{tag.regex})")
+        reg = f"(?P<{name}>{re.escape(comment.open)}{tag.regex})"
+        if comment.close is not None:
+            reg += re.escape(comment.close)
+        strings.append(reg)
     regex = re.compile("|".join(strings), flags=re.MULTILINE)
     return mappings, regex  # type: ignore
 

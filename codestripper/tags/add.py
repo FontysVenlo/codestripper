@@ -4,7 +4,7 @@ from codestripper.tags.tag import SingleTag, TagData
 
 
 class AddTag(SingleTag):
-    regex = r'cs:add:(.*?)'
+    regex = r'cs:add:(.*)?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(data)
