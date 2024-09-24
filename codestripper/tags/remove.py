@@ -3,7 +3,7 @@ from codestripper.tags.tag import RangeTag, RangeOpenTag, RangeCloseTag, TagData
 
 class RemoveTag(SingleTag):
 
-    regex = r'cs:remove\s*?$'
+    regex = r'cs:remove(?!:)(.*)?'
 
     def __init__(self, data: TagData):
         super().__init__(data)

@@ -5,14 +5,14 @@ from codestripper.tags.tag import RangeTag, RangeOpenTag, RangeCloseTag, TagData
 
 
 class UncommentOpenTag(RangeOpenTag):
-    regex = r'cs:uncomment:start.*?$'
+    regex = r'cs:uncomment:start.*?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(UncommentRangeTag, data)
 
 
 class UncommentCloseTag(RangeCloseTag):
-    regex = 'cs:uncomment:end.*?$'
+    regex = 'cs:uncomment:end.*?'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(UncommentRangeTag, data)
