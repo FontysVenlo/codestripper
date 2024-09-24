@@ -5,6 +5,7 @@ from codestripper.errors import TokenizerError
 from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, RemoveOpenTag, RemoveCloseTag, \
     UncommentOpenTag, LegacyOpenTag, LegacyCloseTag, RemoveTag, AddTag
 from codestripper.tags.tag import SingleTag, Tag, RangeOpenTag, RangeCloseTag, RangeTag, TagData
+from codestripper.utils.comments import Comment
 
 default_tags: Set[Type[SingleTag]] = {
     IgnoreFileTag,
@@ -25,13 +26,13 @@ CreateTagLambda = Callable[[TagData], SingleTag]
 CreateTagMapping = Dict[str, CreateTagLambda]
 
 
-def calculate_mappings(tags: Set[Type[SingleTag]], comment: str) -> Tuple[CreateTagMapping, Pattern]:
+def calculate_mappings(tags: Set[Type[SingleTag]], comment: Comment) -> Tuple[CreateTagMapping, Pattern]:
     strings = [r"(?P<newline>\n)"]
     mappings = {}
     for tag in tags:
         name = f"{tag.__name__}"
         mappings[name] = lambda data, constructor=tag: constructor(data)
-        strings.append(f"(?P<{name}>{comment}{tag.regex})")
+        strings.append(f"(?P<{name}>{comment.open}{tag.regex})")
     regex = re.compile("|".join(strings), flags=re.MULTILINE)
     return mappings, regex  # type: ignore
 
@@ -39,9 +40,9 @@ def calculate_mappings(tags: Set[Type[SingleTag]], comment: str) -> Tuple[Create
 class Tokenizer:
     mappings: CreateTagMapping = {}
     regex: Pattern = re.compile("")
-    comment: str = ""
+    comment: Comment
 
-    def __init__(self, content: str, comment: str) -> None:
+    def __init__(self, content: str, comment: Comment) -> None:
         self.content = content
         self.ordered_tags: List[Tag] = []
         self.open_stack: List[RangeOpenTag] = []

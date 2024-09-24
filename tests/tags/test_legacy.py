@@ -1,4 +1,5 @@
 from codestripper.code_stripper import CodeStripper
+from codestripper.utils.comments import Comment
 
 
 def test_legacy_should_remove():
@@ -9,7 +10,7 @@ def test_legacy_should_remove():
     """
     expected = """
     """
-    output = CodeStripper(case, "//").strip()
+    output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Legacy should remove contents inbetween tags"
 
 
@@ -23,5 +24,5 @@ def test_legacy_should_replace():
     start
     end
     """
-    output = CodeStripper(case, "//").strip()
+    output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Legacy should replace on start and end"

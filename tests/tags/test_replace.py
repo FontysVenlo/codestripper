@@ -1,4 +1,5 @@
 from codestripper.code_stripper import CodeStripper
+from codestripper.utils.comments import Comment
 
 
 def test_replace():
@@ -8,7 +9,7 @@ def test_replace():
     expected = """
     test
     """
-    output = CodeStripper(case, "//").strip()
+    output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Replace should replace keeping whitespace"
 
 
@@ -19,7 +20,7 @@ def test_replace_empty():
     expected = """
     
     """
-    output = CodeStripper(case, "//").strip()
+    output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Replace should replace with empty string keeping whitespace"
 
 
@@ -30,7 +31,7 @@ def test_replace_valid():
     expected = """
     asd//cs:replace
     """
-    output = CodeStripper(case, "//").strip()
+    output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Only valid replace tag should work"
 
 
@@ -41,5 +42,5 @@ def test_replace_symbol():
     expected = """
     //TODO: test
     """
-    output = CodeStripper(case, "//").strip()
+    output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Replace with ':' should work"

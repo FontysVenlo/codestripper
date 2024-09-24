@@ -9,6 +9,7 @@ from codestripper.tags import IgnoreFileError
 from codestripper.tags.tag import Tag, RangeTag
 from codestripper.tokenizer import Tokenizer
 from codestripper.utils import get_working_directory
+from codestripper.utils.comments import comments_mapping, Comment
 
 logger = logging.getLogger("codestripper")
 
@@ -26,7 +27,14 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
             content = handle.read()
         if content is not None:
             try:
-                stripped = CodeStripper(content, comment).strip()
+                _, file_extension = os.path.splitext(file)
+                file_extension = file_extension.lower()
+                if not file_extension in comments_mapping:
+                    logger.error(f"Unknown extension: '{file_extension}', "
+                                 f"please specify which comment to use for this file extension.")
+                    continue
+                com = comments_mapping[file_extension]
+                stripped = CodeStripper(content, com).strip()
             except IgnoreFileError:
                 logger.info(f"File '{file}' is ignored, because of ignore tag")
                 continue
@@ -50,7 +58,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
 
 class CodeStripper:
 
-    def __init__(self, content: str, comment: str) -> None:
+    def __init__(self, content: str, comment: Comment) -> None:
         self.content = content
         self.comment = comment
 

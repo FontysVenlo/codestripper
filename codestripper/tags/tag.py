@@ -2,6 +2,8 @@ import re
 from dataclasses import dataclass
 from typing import Type, Union, List, Pattern, Iterable, Optional
 
+from codestripper.utils.comments import Comment
+
 
 @dataclass
 class TagData:
@@ -13,7 +15,7 @@ class TagData:
     regex_end: int
     parameter_start: int
     parameter_end: int
-    comment: str
+    comment: Comment
 
     def __repr__(self) -> str:
         return (f"{self.line}, line ({self.line_number}): {self.line_start}:{self.line_end},"
