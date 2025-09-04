@@ -34,8 +34,21 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
     stripped_files: List[str] = []
     has_errors: bool = False
     for file in files:
-        with open(os.path.join(cwd, file), 'r') as handle:
-            content = handle.read()
+        try:
+            with open(os.path.join(cwd, file), 'r') as handle:
+                content = handle.read()
+        except UnicodeDecodeError as e:
+            if binary == UnexpectedInputOptions.FAIL:
+                raise e
+            elif binary == UnexpectedInputOptions.IGNORE:
+                logger.info(f"Ignoring binary file: '{file}'")
+                continue
+            else:
+                path = os.path.join(out, file)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                shutil.copy2(os.path.join(cwd, file), path)
+                stripped_files.append(file)
+                continue
         if content is not None:
             stripped = ""
             try:
@@ -51,6 +64,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                         logger.info(f"Unknown extension: '{file_extension}' ignored")
                         continue
                     else:
+                        # Keep the complete content
                         stripped = content
                 else:
                     com = comments_mapping[file_extension]

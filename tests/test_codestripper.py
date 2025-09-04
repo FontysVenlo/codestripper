@@ -1,6 +1,7 @@
 import logging
 import os.path
 import re
+import shutil
 from pathlib import Path
 
 import pytest
@@ -155,3 +156,30 @@ def test_non_fail_on_error(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCa
         strip_files(files, "files", output="out", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 4
+
+
+def test_project_with_binary_fail(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    shutil.rmtree("out", ignore_errors=True)
+    files = FileUtils(["**/*.java", "pom.xml", "test.jpg"], working_directory="testproject").get_matching_files()
+
+    with pytest.raises(Exception):
+        strip_files(files, "testproject", output="out",binary=UnexpectedInputOptions.FAIL, fail_on_error=True)
+
+
+def test_project_with_binary_ignore(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    shutil.rmtree("out", ignore_errors=True)
+    files = FileUtils(["**/*.java", "pom.xml", "test.jpg"], working_directory="testproject").get_matching_files()
+
+    stripped = strip_files(files, "testproject", output="out",binary=UnexpectedInputOptions.IGNORE)
+    assert "test.jpg" not in stripped
+
+
+def test_project_with_binary_include(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    shutil.rmtree("out", ignore_errors=True)
+    files = FileUtils(["**/*.java", "pom.xml", "test.jpg"], working_directory="testproject").get_matching_files()
+
+    stripped = strip_files(files, "testproject", output="out",binary=UnexpectedInputOptions.INCLUDE)
+    assert "test.jpg" in stripped
