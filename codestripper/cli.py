@@ -4,6 +4,7 @@ from typing import List
 
 from codestripper.code_stripper import strip_files
 from codestripper.utils import FileUtils, set_logger_level, get_working_directory
+from codestripper.utils.enums import UnexpectedInputOptions
 
 
 def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
@@ -26,6 +27,10 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
                         help="set the working directory for include/exclude", default=os.getcwd())
     parser.add_argument("-e", "--fail-on-error", action="store_false",
                         help="Fail if an error occurs during code stripping")
+    parser.add_argument("-b", "--binary", choices=list(UnexpectedInputOptions), default=UnexpectedInputOptions.FAIL,
+                        action="store", help="What to do if binary file is matched")
+    parser.add_argument("-u", "--unknown", choices=list(UnexpectedInputOptions), default=UnexpectedInputOptions.FAIL,
+                        action="store", help="What to do if a file with unknown extension is matched")
 
 
 def main() -> None:
