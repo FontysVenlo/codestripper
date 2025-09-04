@@ -13,6 +13,28 @@ from codestripper.utils.enums import UnexpectedInputOptions
 test_project_dir = os.path.join(Path(__file__).parent.absolute())
 
 
+def test_project_with_unknown_extension_fail(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["**/*.java", "pom.xml", "**/*.test"], working_directory="testproject").get_matching_files()
+
+    with pytest.raises(Exception):
+        strip_files(files, "testproject", output="out",unknown_extension=UnexpectedInputOptions.FAIL, fail_on_error=True)
+
+
+def test_project_with_unknown_extension_ignore(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["**/*.java", "pom.xml", "test.test"], working_directory="testproject").get_matching_files()
+    stripped = strip_files(files, "testproject", output="out", unknown_extension=UnexpectedInputOptions.IGNORE)
+    assert "test.test" not in stripped
+
+
+def test_project_with_unknown_extension_include(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    files = FileUtils(["**/*.java", "pom.xml", "test.test"], working_directory="testproject").get_matching_files()
+    stripped = strip_files(files, "testproject", output="out", unknown_extension=UnexpectedInputOptions.INCLUDE)
+    assert "test.test" in stripped
+
+
 def test_project(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
     monkeypatch.chdir(test_project_dir)
     with caplog.at_level(logging.INFO, logger='codestripper'):
@@ -133,25 +155,3 @@ def test_non_fail_on_error(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCa
         strip_files(files, "files", output="out", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 4
-
-
-def test_project_with_unknown_extension_fail(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture):
-    monkeypatch.chdir(test_project_dir)
-    files = FileUtils(["**/*.java", "pom.xml", "**/*.test"], working_directory="testproject").get_matching_files()
-
-    with pytest.raises(Exception):
-        strip_files(files, "testproject", output="out",unknown_extension=UnexpectedInputOptions.FAIL, fail_on_error=True)
-
-
-def test_project_with_unknown_extension_ignore(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.chdir(test_project_dir)
-    files = FileUtils(["**/*.java", "pom.xml", "test.test"], working_directory="testproject").get_matching_files()
-    stripped = strip_files(files, "testproject", output="out", unknown_extension=UnexpectedInputOptions.IGNORE)
-    assert "test.test" not in stripped
-
-
-def test_project_with_unknown_extension_include(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.chdir(test_project_dir)
-    files = FileUtils(["**/*.java", "pom.xml", "test.test"], working_directory="testproject").get_matching_files()
-    stripped = strip_files(files, "testproject", output="out", unknown_extension=UnexpectedInputOptions.INCLUDE)
-    assert "test.test" in stripped
