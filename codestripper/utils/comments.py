@@ -22,5 +22,8 @@ comments_mapping: Dict[str, Comment] = {
     ".r": Comment("#"),
     ".py": Comment("#"),
     ".ps1": Comment("#"),
-    ".rb": Comment("#")
+    ".rb": Comment("#"),
+    ".yml": Comment("#"),
+    ".yaml": Comment("#"),
+    "": Comment("#"),  # Default comment style for unknown file types
 }
