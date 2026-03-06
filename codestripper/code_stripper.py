@@ -29,8 +29,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
 
     cwd = get_working_directory(working_directory)
     out = os.path.join(os.getcwd(), output)
-    if os.path.isdir(out):
-        shutil.rmtree(out)
+
     stripped_files: List[str] = []
     has_errors: bool = False
     for file in files:
