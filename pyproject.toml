@@ -22,8 +22,8 @@ lint = [
     "ruff>=0.16.8",
 ]
 test = [
-    "pytest>=7.0.0,<8",
-    "pytest-cov>=4.0.0,<5",
+    "pytest>=9.0.3,<10",
+    "pytest-cov>=7.0.0,<8",
     "mypy>=1.0.0,<2",
 ]
 
