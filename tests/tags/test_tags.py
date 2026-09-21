@@ -3,7 +3,7 @@ import pytest
 from codestripper import tokenizer
 from codestripper.code_stripper import CodeStripper
 from codestripper.errors import InvalidTagError, TokenizerError
-from codestripper.tags.tag import RangeOpenTag, TagData, RangeCloseTag, RangeTag
+from codestripper.tags.tag import RangeOpenTag, SingleTag, TagData, RangeCloseTag, RangeTag
 from codestripper.utils.comments import Comment
 
 
@@ -106,20 +106,15 @@ def test_mismatch_open_close():
         CodeStripper(case, Comment("//")).strip()
 
 
-def test_invalid_tag():
+def test_invalid_tag(monkeypatch: pytest.MonkeyPatch):
     case = """
             test line
-            ^^cs:invalid:start
-            ^^cs:invalid:end
+            //cs:invalid:start
+            //cs:invalid:end
             """
-    default_tags = tokenizer.default_tags
-    tokenizer.default_tags = {
-        InvalidOpenTag,
-        InvalidCloseTag
-    }
+    monkeypatch.setattr(tokenizer, "default_tags", {InvalidOpenTag, InvalidCloseTag})
     with pytest.raises(InvalidTagError) as ex:
-        CodeStripper(case, Comment("^^")).strip()
-    tokenizer.default_tags = default_tags
+        CodeStripper(case, Comment("//")).strip()
     assert "InvalidRangeTag" in str(ex)
 
 
@@ -158,3 +153,37 @@ def test_tokenizer_error_line_numbers():
     with pytest.raises(TokenizerError) as ex:
         CodeStripper("a\n//cs:remove:end\n", Comment("//")).strip()
     assert ex.value.line_number == 2
+
+
+class CustomTag(SingleTag):
+    regex = r'cs:custom'
+
+    def execute(self, content: str) -> str:
+        return "custom"
+
+
+def test_tag_added_after_comment_was_used(monkeypatch: pytest.MonkeyPatch):
+    """The cached regex of a comment should not hide tags that are added later"""
+    case = "a\n//cs:custom\nb\n"
+    # Use the comment before the tag is added, so its regex is cached
+    assert CodeStripper(case, Comment("//")).strip() == case
+
+    monkeypatch.setattr(tokenizer, "default_tags", {*tokenizer.default_tags, CustomTag})
+    assert CodeStripper(case, Comment("//")).strip() == "a\ncustom\nb\n"
+
+
+def test_tag_added_to_default_tags_in_place(monkeypatch: pytest.MonkeyPatch):
+    case = "a\n//cs:custom\nb\n"
+    assert CodeStripper(case, Comment("//")).strip() == case
+
+    monkeypatch.setattr(tokenizer, "default_tags", set(tokenizer.default_tags))
+    tokenizer.default_tags.add(CustomTag)
+    assert CodeStripper(case, Comment("//")).strip() == "a\ncustom\nb\n"
+
+
+def test_removed_tag_is_no_longer_used(monkeypatch: pytest.MonkeyPatch):
+    case = "a\n//cs:remove\nb\n"
+    assert CodeStripper(case, Comment("//")).strip() == "a\nb\n"
+
+    monkeypatch.setattr(tokenizer, "default_tags", set(tokenizer.default_tags) - {tokenizer.RemoveTag})
+    assert CodeStripper(case, Comment("//")).strip() == case

@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Set, Dict, Callable, List, Pattern, Tuple, Type
+from typing import Optional, Set, Dict, Callable, FrozenSet, List, Pattern, Tuple, Type
 
 from codestripper.errors import TokenizerError
 from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, RemoveOpenTag, RemoveCloseTag, \
@@ -40,9 +40,13 @@ def calculate_mappings(tags: Set[Type[SingleTag]], comment: Comment) -> Tuple[Cr
     return mappings, regex  # type: ignore
 
 
+# The mappings and regex depend on the comment and on the tags that are used
+CacheKey = Tuple[Comment, FrozenSet[Type[SingleTag]]]
+
+
 class Tokenizer:
     # Only the (expensive) calculation is shared between tokenizers, the state of a tokenizer is per instance
-    mapping_cache: Dict[str, Tuple[CreateTagMapping, Pattern]] = {}
+    mapping_cache: Dict[CacheKey, Tuple[CreateTagMapping, Pattern]] = {}
 
     def __init__(self, content: str, comment: Comment) -> None:
         self.content = content
@@ -50,11 +54,13 @@ class Tokenizer:
         self.ordered_tags: List[Tag] = []
         self.open_stack: List[RangeOpenTag] = []
         self.range_stack: Dict[int, Optional[List[Tag]]] = {}
-        if str(comment) not in Tokenizer.mapping_cache:
-            Tokenizer.mapping_cache[str(comment)] = calculate_mappings(default_tags, comment)
+        # The tags can be changed (e.g. a custom tag is added), so they are part of the key
+        key: CacheKey = (comment, frozenset(default_tags))
+        if key not in Tokenizer.mapping_cache:
+            Tokenizer.mapping_cache[key] = calculate_mappings(default_tags, comment)
         self.mappings: CreateTagMapping
         self.regex: Pattern
-        self.mappings, self.regex = Tokenizer.mapping_cache[str(comment)]
+        self.mappings, self.regex = Tokenizer.mapping_cache[key]
         self.group_count = self.regex.groups
 
     def tokenize(self) -> List[Tag]:
