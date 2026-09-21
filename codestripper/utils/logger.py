@@ -30,21 +30,23 @@ class ColourFormatter(logging.Formatter):
         return formatter.format(record)
 
 
+class CodeStripperHandler(logging.StreamHandler):
+    """Handler that is added by `set_logger_level`, so that it can be replaced instead of duplicated"""
+
+
+# Level per verbosity, more verbosity than available uses the last level
+VERBOSITY_LEVELS = [logging.ERROR, logging.WARNING, logging.INFO, logging.DEBUG]
+
+
 def set_logger_level(logger_name: str, verbosity: int = 0, add_colours: bool = True) -> None:
     logger = logging.getLogger(logger_name)
-    handler = logging.StreamHandler()
+    level = VERBOSITY_LEVELS[min(max(verbosity, 0), len(VERBOSITY_LEVELS) - 1)]
+    handler = CodeStripperHandler()
     if add_colours:
         handler.setFormatter(ColourFormatter())
-    if verbosity == 0:
-        logger.setLevel(logging.ERROR)
-        handler.setLevel(logging.ERROR)
-    elif verbosity == 1:
-        logger.setLevel(logging.WARNING)
-        handler.setLevel(logging.WARNING)
-    elif verbosity == 2:
-        logger.setLevel(logging.INFO)
-        handler.setLevel(logging.INFO)
-    elif verbosity == 3:
-        logger.setLevel(logging.DEBUG)
-        handler.setLevel(logging.DEBUG)
+    logger.setLevel(level)
+    handler.setLevel(level)
+    # Replace the handler of an earlier call, otherwise every message is logged multiple times
+    for existing in [h for h in logger.handlers if isinstance(h, CodeStripperHandler)]:
+        logger.removeHandler(existing)
     logger.addHandler(handler)
