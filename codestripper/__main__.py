@@ -1,4 +1,3 @@
-import sys
 
 from codestripper.cli import main
 

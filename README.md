@@ -27,13 +27,41 @@ CodeStripper can be used as a Python Module and as a command line tool. The comm
 | Flag | Long form | Description | Default value | Required |
 |----------|------|-------------|---------------|----------|
 | `<positional>` | None | files to include for code stripping (glob) | None | True |
-| -e | --exclude | files to exclude for code stripping (glob) | None | False |
-| -c | --comment | comment symbol(s) for the given language | // | False |
+| -x | --exclude | files to exclude for code stripping (glob), can be repeated | None | False |
+| -c | --comment | comment symbol(s) for a file extension, format `<extension>:<open>` or `<extension>:<open>:<close>` (e.g. `.java://`), the extension starts with a `.` and is case-insensitive, can be repeated | built-in mapping (see below) | False |
 | -o | --output | the output directory to store the stripped files | out | False |
 | -r | --recursive | do NOT use recursive globs for include/exclude | True | False |
-| -v | --verbosity | increase output verbosity | None | False |
-| -d | --dry | execute a dry run | False | False |
+| -v | --verbosity | increase output verbosity (can be repeated) | 0 | False |
+| -d | --dry-run | execute a dry run, prints the stripped files (with a `==> <file> <==` header) to stdout instead of writing them | False | False |
 | -w | --working-directory | set the working directory for include/exclude | pwd | False |
+| -e | --fail-on-error | do NOT fail if an error occurs during code stripping | fail on error | False |
+| -b | --binary | what to do if a binary file is matched: `fail`, `ignore` or `include` | fail | False |
+| -u | --unknown | what to do if a file with an unknown extension is matched: `fail`, `ignore` or `include` | fail | False |
+
+### Supported comment styles
+
+The comment symbol is chosen based on the file extension. The following extensions are supported by default:
+
+| Comment | Extensions |
+|---------|------------|
+| `//` | `.java`, `.cs`, `.js`, `.php`, `.swift` |
+| `#` | `.py`, `.r`, `.ps1`, `.rb`, `.yml`, `.yaml`, files without extension |
+| `%` | `.tex`, `.m` |
+| `--` | `.sql`, `.lua` |
+| `<!-- -->` | `.xml` |
+| `(* *)` | `.ml` |
+
+Use `-c` to add or override an extension, for example `-c .kt://` or `-c .html:'<!--':'-->'`.
+
+### Python module
+
+```python
+from codestripper.code_stripper import strip_files
+
+stripped = strip_files(["src/Test.java"], working_directory=".", output="out", dry_run=False)
+```
+
+`strip_files` returns the files that were stripped. Files that fail (e.g. an invalid tag) are logged and the other files are still processed, after which a `StripError` is raised. Pass `fail_on_error=False` to only log the errors, like the `-e` flag of the command line tool.
 
 ## Examples
 
@@ -150,7 +178,6 @@ classDiagram
     Tag <|-- RangeTag
     
     class Tag{
-        <<Abstract>>
         +offset: int
         +start: int
         +end: int
@@ -169,10 +196,10 @@ classDiagram
         +SingleTag(data: TagData)
     }
     class RangeOpenTag{
-        +RangeOpen(parent: Type, data: TagData)
+        +RangeOpenTag(parent: Type, data: TagData)
     }
     class RangeCloseTag{
-        +RangeOpen(parent: Type, data: TagData)
+        +RangeCloseTag(parent: Type, data: TagData)
     }
     class RangeTag{
         +inset: int
@@ -180,6 +207,7 @@ classDiagram
         +end: int
         +open_tag: RangeOpenTag
         +close_tag: RangeCloseTag
+        +tags: List[Tag]
         +RangeTag(open_tag: RangeOpenTag, close_tag: RangeCloseTag)
         +add_tags(tags: Iterable[Tag])
     }
@@ -212,7 +240,7 @@ class TestTag(SingleTag):
         # None means the line is removed
     
     def is_valid(self) -> bool:
-        # Return wether the tag is valid
+        # Return whether the tag is valid
 ```
 
   - RangeTag: Range needs a `RangeOpenTag`, `RangeCloseTag` and a `RangeTag`
@@ -228,7 +256,7 @@ class TestOpenTag(RangeOpenTag):
         # None means the line is removed
     
     def is_valid(self) -> bool:
-        # Return wether the tag is valid
+        # Return whether the tag is valid
 
 class TestCloseTag(RangeCloseTag):
     # Same as RangeOpenTag
@@ -242,7 +270,7 @@ class TestRangeTag(RangeTag):
     def execute(self, content: str) -> Union[str, None]:
         # Manipulate lines between the tags
 ```
-3. Add the new tag(s) to the `default_tags` in the `tokenizer`,
+3. Export the new tag(s) in `codestripper/tags/__init__.py`, import them in the `tokenizer` and add them to its `default_tags`,
 
 ```python
 default_tags: Set[Type[SingleTag]] = {
@@ -250,7 +278,8 @@ default_tags: Set[Type[SingleTag]] = {
     RemoveOpenTag,
     ...,
     TestTag,
-    TestOpenTag
+    TestOpenTag,
+    TestCloseTag
 }
 ```
-> :warning: **Only the `SingleTag`(s) need to be added, not the `RangeTag`** 
+> :warning: **Only the `SingleTag`(s) (including `RangeOpenTag` and `RangeCloseTag`) need to be added, not the `RangeTag`** 

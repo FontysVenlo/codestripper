@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Set, Dict, Callable, List, Pattern, Tuple, Type
+from typing import Optional, Set, Dict, Callable, FrozenSet, List, Pattern, Tuple, Type
 
 from codestripper.errors import TokenizerError
 from codestripper.tags import ReplaceTag, UncommentCloseTag, IgnoreFileTag, RemoveOpenTag, RemoveCloseTag, \
@@ -40,22 +40,27 @@ def calculate_mappings(tags: Set[Type[SingleTag]], comment: Comment) -> Tuple[Cr
     return mappings, regex  # type: ignore
 
 
+# The mappings and regex depend on the comment and on the tags that are used
+CacheKey = Tuple[Comment, FrozenSet[Type[SingleTag]]]
+
+
 class Tokenizer:
-    mapping_cache: Dict[str, Tuple[CreateTagMapping, Pattern]] = {}
-    mappings: CreateTagMapping = {}
-    regex: Pattern = re.compile("")
-    comment: Comment
+    # Only the (expensive) calculation is shared between tokenizers, the state of a tokenizer is per instance
+    mapping_cache: Dict[CacheKey, Tuple[CreateTagMapping, Pattern]] = {}
 
     def __init__(self, content: str, comment: Comment) -> None:
         self.content = content
+        self.comment = comment
         self.ordered_tags: List[Tag] = []
         self.open_stack: List[RangeOpenTag] = []
         self.range_stack: Dict[int, Optional[List[Tag]]] = {}
-        Tokenizer.comment = comment
-        if not str(comment) in Tokenizer.mapping_cache:
-            Tokenizer.mapping_cache[str(comment)] = calculate_mappings(default_tags, comment)
-        Tokenizer.mappings = Tokenizer.mapping_cache[str(comment)][0]
-        Tokenizer.regex = Tokenizer.mapping_cache[str(comment)][1]
+        # The tags can be changed (e.g. a custom tag is added), so they are part of the key
+        key: CacheKey = (comment, frozenset(default_tags))
+        if key not in Tokenizer.mapping_cache:
+            Tokenizer.mapping_cache[key] = calculate_mappings(default_tags, comment)
+        self.mappings: CreateTagMapping
+        self.regex: Pattern
+        self.mappings, self.regex = Tokenizer.mapping_cache[key]
         self.group_count = self.regex.groups
 
     def tokenize(self) -> List[Tag]:
@@ -78,13 +83,11 @@ class Tokenizer:
                 continue  # All groups should be named
             else:
                 data = self.__create_tag_data(self.content, line_number, line_start, line_end, match, parameter)
-                tag = Tokenizer.mappings[kind](data)
+                tag = self.mappings[kind](data)
                 self.__handle_tag(tag)
         if len(self.open_stack) != 0:
             t = self.open_stack[0]
             raise TokenizerError(t, f"There is still an unclosed {t.__class__.__name__} tag!")
-        # if len(self.range_stack) != 0:
-        #     raise TokenizerError(self.range_stack[0][0], f"")
         return self.ordered_tags
 
     def __add_range_stack(self, index: int, tag: Tag) -> None:
@@ -97,10 +100,13 @@ class Tokenizer:
             self.open_stack.append(tag)
         elif isinstance(tag, RangeCloseTag):
             if len(self.open_stack) == 0:
-                raise TokenizerError(tag, f"Cannot close tag {tag.__class__.__name__}, as there is no matching open tag")
+                raise TokenizerError(
+                    tag, f"Cannot close tag {tag.__class__.__name__}, as there is no matching open tag")
             range_open = self.open_stack.pop()
             if range_open.parent != tag.parent:
-                raise TokenizerError(tag, f"Cannot match closing tag: {tag.__class__.__name__} to open tag: {range_open.__class__.__name__}")
+                raise TokenizerError(
+                    tag, f"Cannot match closing tag: {tag.__class__.__name__} "
+                         f"to open tag: {range_open.__class__.__name__}")
             range_tag: RangeTag = tag.parent(range_open, tag)
             index = len(self.open_stack)
             embedded = self.range_stack.pop(index + 1, None)
@@ -131,7 +137,6 @@ class Tokenizer:
         else:
             parameter_start = command_end
             parameter_end = command_start
-        parameter = line[parameter_start:parameter_end]
         return TagData(line=line,
                        line_number=line_number,
                        line_start=line_start,

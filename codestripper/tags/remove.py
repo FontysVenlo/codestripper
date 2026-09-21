@@ -24,6 +24,7 @@ class RemoveCloseTag(RangeCloseTag):
 
 
 class RemoveRangeTag(RangeTag):
+    invalid_reason = "the range does not contain any lines"
 
     def __init__(self, open_tag: RemoveOpenTag, close_tag: RemoveCloseTag) -> None:
         super().__init__(open_tag, close_tag)

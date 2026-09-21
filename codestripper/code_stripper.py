@@ -4,88 +4,97 @@ import shutil
 from pathlib import Path
 from typing import Union, Iterable, List, Optional
 
-from codestripper.errors import InvalidTagError, TokenizerError
+from codestripper.errors import InvalidTagError, StripError, TokenizerError
 from codestripper.tags import IgnoreFileError
 from codestripper.tags.tag import Tag, RangeTag
 from codestripper.tokenizer import Tokenizer
 from codestripper.utils import get_working_directory
-from codestripper.utils.comments import comments_mapping, Comment
+from codestripper.utils.comments import get_comments_mapping, Comment
 from codestripper.utils.enums import UnexpectedInputOptions
 
 logger = logging.getLogger("codestripper")
 
 
-def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, * ,comments: Optional[List[str]] = None,
-                output: Union[Path, str] = "out", dry_run: bool = False, fail_on_error: bool = False,
-                binary: UnexpectedInputOptions = UnexpectedInputOptions.FAIL, unknown_extension: UnexpectedInputOptions = UnexpectedInputOptions.FAIL) -> List[str]:
+def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, *,
+                comments: Optional[List[str]] = None, output: Union[Path, str] = "out", dry_run: bool = False,
+                fail_on_error: bool = True, binary: UnexpectedInputOptions = UnexpectedInputOptions.FAIL,
+                unknown_extension: UnexpectedInputOptions = UnexpectedInputOptions.FAIL) -> List[str]:
 
-    if comments is not None:
-        for comment in comments:
-            parts = comment.split(":")
-            if len(parts) == 2:
-                comments_mapping[parts[0]] = Comment(parts[1])
-            else:
-                comments_mapping[parts[0]] = Comment(parts[1], parts[2])
+    mapping = get_comments_mapping(comments)
 
     cwd = get_working_directory(working_directory)
     out = os.path.join(os.getcwd(), output)
+    # Files in the output directory are the result of an earlier run, so they should not be stripped again.
+    # Only relevant if the output directory is a subdirectory of the working directory (not the directory itself)
+    real_out = Path(os.path.realpath(out))
+    skip_output_directory = real_out != Path(cwd) and real_out.is_relative_to(cwd)
 
     stripped_files: List[str] = []
     has_errors: bool = False
     for file in files:
+        if skip_output_directory and Path(cwd, file).is_relative_to(real_out):
+            logger.debug(f"Skipping '{file}', it is in the output directory")
+            continue
         try:
-            with open(os.path.join(cwd, file), 'r') as handle:
+            with open(os.path.join(cwd, file), 'r', encoding='utf-8') as handle:
                 content = handle.read()
-        except UnicodeDecodeError as e:
+        except UnicodeDecodeError:
             if binary == UnexpectedInputOptions.FAIL:
-                raise e
+                logger.error(f"{file}: binary file matched, use the binary option to ignore or include such files")
+                has_errors = True
+                continue
             elif binary == UnexpectedInputOptions.IGNORE:
                 logger.info(f"Ignoring binary file: '{file}'")
                 continue
             else:
-                path = os.path.join(out, file)
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                shutil.copy2(os.path.join(cwd, file), path)
                 stripped_files.append(file)
-                continue
-        if content is not None:
-            stripped = ""
-            try:
-                _, file_extension = os.path.splitext(file)
-                file_extension = file_extension.lower()
-                if not file_extension in comments_mapping:
-                    if unknown_extension == UnexpectedInputOptions.FAIL:
-                        logger.error(f"Unknown extension: '{file_extension}', "
-                                 f"please specify which comment to use for this file extension.")
-                        has_errors = True
-                        break
-                    elif unknown_extension == UnexpectedInputOptions.IGNORE:
-                        logger.info(f"Unknown extension: '{file_extension}' ignored")
-                        continue
-                    else:
-                        # Keep the complete content
-                        stripped = content
+                if dry_run:
+                    print(f"==> {file} <==")
+                    print("(binary file, copied unchanged)")
                 else:
-                    com = comments_mapping[file_extension]
-                    stripped = CodeStripper(content, com).strip()
-            except IgnoreFileError:
-                logger.info(f"File '{file}' is ignored, because of ignore tag")
+                    path = os.path.join(out, file)
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    shutil.copy2(os.path.join(cwd, file), path)
                 continue
-            except (TokenizerError, InvalidTagError) as ex:
-                has_errors = True
-                message = f"{file}:{ex.line_number}: {ex.message}"
-                logger.error(message)
-                continue
-            stripped_files.append(file)
-            if dry_run:
-                logger.info(stripped)
+        stripped = ""
+        try:
+            _, file_extension = os.path.splitext(file)
+            file_extension = file_extension.lower()
+            if file_extension not in mapping:
+                if unknown_extension == UnexpectedInputOptions.FAIL:
+                    logger.error(f"{file}: unknown extension: '{file_extension}', "
+                                 f"please specify which comment to use for this file extension.")
+                    has_errors = True
+                    continue
+                elif unknown_extension == UnexpectedInputOptions.IGNORE:
+                    logger.info(f"Unknown extension: '{file_extension}' ignored")
+                    continue
+                else:
+                    # Keep the complete content
+                    stripped = content
             else:
-                path = os.path.join(out, file)
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                with open(path, 'w+') as handle:
-                    handle.write(stripped)
+                com = mapping[file_extension]
+                stripped = CodeStripper(content, com).strip()
+        except IgnoreFileError:
+            logger.info(f"File '{file}' is ignored, because of ignore tag")
+            continue
+        except (TokenizerError, InvalidTagError) as ex:
+            has_errors = True
+            message = f"{file}:{ex.line_number}: {ex.message}"
+            logger.error(message)
+            continue
+        stripped_files.append(file)
+        if dry_run:
+            # A dry run has no other output, so print instead of log (logging depends on the verbosity)
+            print(f"==> {file} <==")
+            print(stripped, end="" if stripped.endswith("\n") else "\n")
+        else:
+            path = os.path.join(out, file)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'w+', encoding='utf-8') as handle:
+                handle.write(stripped)
     if has_errors and fail_on_error:
-        raise Exception("There were errors stripping some files, see log for details")
+        raise StripError("There were errors stripping some files, see log for details")
     return stripped_files
 
 
@@ -96,11 +105,9 @@ class CodeStripper:
         self.comment = comment
 
     def strip(self) -> str:
-
-        if self.content is not None:
-            tokenizer = Tokenizer(self.content, self.comment)
-            tags = tokenizer.tokenize()
-            self.__traverse(tags)
+        tokenizer = Tokenizer(self.content, self.comment)
+        tags = tokenizer.tokenize()
+        self.__traverse(tags)
         return self.content
 
     def __traverse(self, tags: List[Tag], offset=0) -> int:

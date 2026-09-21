@@ -17,7 +17,8 @@ test_project_dir = os.path.join(Path(__file__).parent.absolute())
 def test_main(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
     monkeypatch.chdir(test_project_dir)
     shutil.rmtree("out", ignore_errors=True)
-    args = ["filename", "-c", ".test:!!", "-c", ".cs:#", "-x", "*.class", "-vv", "-o", "out", "-w", "testproject", "**/*.java"]
+    args = ["filename", "-c", ".test:!!", "-c", ".cs:#", "-x", "*.class", "-vv", "-o", "out", "-w", "testproject",
+            "**/*.java"]
     with patch.object(sys, 'argv', args):
         with caplog.at_level(logging.INFO, logger='codestripper'):
             main()
@@ -25,3 +26,74 @@ def test_main(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
     files = glob.glob("out/**/*.java", recursive=True)
     assert len(info) == 1 and len(files) == 4
 
+
+
+def test_main_unknown_include(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "file.unknownext").write_text("content")
+    monkeypatch.chdir(tmp_path)
+    args = ["codestripper", "-u", "include", "-o", "out", "file.unknownext"]
+    with patch.object(sys, 'argv', args):
+        main()
+    assert (tmp_path / "out" / "file.unknownext").is_file()
+
+
+def test_main_unknown_ignore(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "file.unknownext").write_text("content")
+    monkeypatch.chdir(tmp_path)
+    args = ["codestripper", "-u", "ignore", "-o", "out", "file.unknownext"]
+    with patch.object(sys, 'argv', args):
+        main()
+    assert not (tmp_path / "out" / "file.unknownext").exists()
+
+
+def test_main_binary_include(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    shutil.rmtree("out", ignore_errors=True)
+    args = ["codestripper", "-b", "include", "-o", "out", "-w", "testproject", "test.jpg"]
+    with patch.object(sys, 'argv', args):
+        main()
+    assert os.path.isfile("out/test.jpg")
+
+
+def test_main_binary_ignore(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_project_dir)
+    shutil.rmtree("out", ignore_errors=True)
+    args = ["codestripper", "-b", "ignore", "-o", "out", "-w", "testproject", "test.jpg"]
+    with patch.object(sys, 'argv', args):
+        main()
+    assert not os.path.exists("out/test.jpg")
+
+
+def test_main_invalid_choice(monkeypatch: pytest.MonkeyPatch):
+    args = ["codestripper", "-b", "nonsense", "test.jpg"]
+    with patch.object(sys, 'argv', args):
+        with pytest.raises(SystemExit):
+            main()
+
+
+@pytest.mark.parametrize("comment", [".java", "java://", ".java:"])
+def test_main_invalid_comment(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, comment: str):
+    args = ["codestripper", "-c", comment, "test.java"]
+    with patch.object(sys, 'argv', args):
+        with pytest.raises(SystemExit):
+            main()
+    assert "Invalid comment" in capsys.readouterr().err
+
+
+def test_main_working_directory_outside(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture):
+    monkeypatch.chdir(test_project_dir)
+    args = ["codestripper", "-w", "..", "*.java"]
+    with patch.object(sys, 'argv', args):
+        with pytest.raises(SystemExit):
+            main()
+    assert "is not inside the current directory" in capsys.readouterr().err
+
+
+def test_main_twice_does_not_strip_output(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {}\n")
+    monkeypatch.chdir(tmp_path)
+    for _ in range(2):
+        with patch.object(sys, 'argv', ["codestripper", "**/*.java"]):
+            main()
+    found = sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.java"))
+    assert found == ["a.java", "out/a.java"]

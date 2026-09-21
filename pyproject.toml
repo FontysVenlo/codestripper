@@ -1,26 +1,53 @@
-[tool.poetry]
+[project]
 name = "codestripper"
 version = "1.2.0"
 description = "CodeStripper used to strip code from assignments"
-authors = ["Bonajo <m.bonajo@fontys.nl>"]
-maintainers = ["Bonajo <m.bonajo@fontys.nl>"]
-homepage = "https://github.com/FontysVenlo/codestripper"
-repository = "https://github.com/FontysVenlo/codestripper"
 readme = "README.md"
-packages = [{include = "codestripper"}]
+requires-python = ">=3.10"
 license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Bonajo", email = "m.bonajo@fontys.nl" }]
+maintainers = [{ name = "Bonajo", email = "m.bonajo@fontys.nl" }]
+dependencies = []
 
-[tool.poetry.dependencies]
-python = "^3.8"
+[project.urls]
+Homepage = "https://github.com/FontysVenlo/codestripper"
+Repository = "https://github.com/FontysVenlo/codestripper"
 
-[tool.poetry.group.test.dependencies]
-pytest = "^7.0.0"
-pytest-cov = "^4.0.0"
-mypy = "^1.0.0"
+[project.scripts]
+codestripper = "codestripper.cli:main"
+
+[dependency-groups]
+lint = [
+    "ruff>=0.16.8",
+]
+test = [
+    "pytest>=9.0.3,<10",
+    "pytest-cov>=7.0.0,<8",
+    "mypy>=1.0.0,<2",
+]
+
+[tool.uv]
+default-groups = ["test", "lint"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.12.9,<0.13"]
+build-backend = "uv_build"
 
-[tool.poetry.scripts]
-codestripper = 'codestripper.cli:main'
+[tool.uv.build-backend]
+module-name = "codestripper"
+module-root = ""
+
+[tool.ruff]
+# Same as the PyCharm default
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# Comparable to the PyCharm inspections: PEP 8 (E, W), unused code and unresolved names (F),
+# naming conventions (N) and shadowing of builtins (A)
+select = ["E", "W", "F", "N", "A"]
+
+[tool.ruff.lint.per-file-ignores]
+# Imports in an __init__.py are the public interface of the package
+"__init__.py" = ["F401"]

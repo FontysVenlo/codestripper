@@ -5,7 +5,9 @@ from codestripper.tags.tag import SingleTag, TagData
 
 
 class IgnoreFileTag(SingleTag):
-    regex = r'cs:ignore'
+    invalid_reason = "the ignore tag is only allowed on the first line"
+    # Not followed by a word character or ':', so 'cs:ignored' or 'cs:ignore:<something>' are not this tag
+    regex = r'cs:ignore(?![\w:])'
 
     def __init__(self, data: TagData) -> None:
         super().__init__(data)

@@ -1,3 +1,4 @@
+import builtins
 import logging
 import os.path
 import re
@@ -8,6 +9,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from codestripper.code_stripper import strip_files
+from codestripper.errors import StripError
 from codestripper.utils import FileUtils
 from codestripper.utils.enums import UnexpectedInputOptions
 
@@ -19,7 +21,8 @@ def test_project_with_unknown_extension_fail(monkeypatch: pytest.MonkeyPatch):
     files = FileUtils(["**/*.java", "pom.xml", "**/*.test"], working_directory="testproject").get_matching_files()
 
     with pytest.raises(Exception):
-        strip_files(files, "testproject", output="out",unknown_extension=UnexpectedInputOptions.FAIL, fail_on_error=True)
+        strip_files(files, "testproject", output="out", unknown_extension=UnexpectedInputOptions.FAIL,
+                    fail_on_error=True)
 
 
 def test_project_with_unknown_extension_ignore(monkeypatch: pytest.MonkeyPatch):
@@ -36,18 +39,21 @@ def test_project_with_unknown_extension_include(monkeypatch: pytest.MonkeyPatch)
     assert "test.test" in stripped
 
 
-def test_project(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
+def test_project(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture):
     monkeypatch.chdir(test_project_dir)
-    with caplog.at_level(logging.INFO, logger='codestripper'):
-        files = FileUtils(["testproject/**/*.java", "testproject/pom.xml"]).get_matching_files()
-        strip_files(files, dry_run=True)
-        stripped = [rec.message for rec in caplog.records]
-        tags_in_content = False
-        for content in stripped:
-            if content.__contains__("//cs:"):
-                tags_in_content = True
-                break
-        assert len(stripped) == 6 and not tags_in_content
+    files = FileUtils(["testproject/**/*.java", "testproject/pom.xml"]).get_matching_files()
+    stripped_files = strip_files(files, dry_run=True)
+    output = capsys.readouterr().out
+    assert output.count("==> ") == 5 and len(stripped_files) == 5
+    assert "//cs:" not in output
+
+
+def test_dry_run_writes_nothing(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n    int x;//cs:remove\n}\n")
+    monkeypatch.chdir(tmp_path)
+    strip_files(["a.java"], ".", output="out", dry_run=True)
+    assert capsys.readouterr().out == "==> a.java <==\nclass A {\n}\n"
+    assert not (tmp_path / "out").exists()
 
 
 def test_project_out(monkeypatch: pytest.MonkeyPatch):
@@ -96,7 +102,7 @@ def test_log_missing_close_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptu
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["MissingClose.java"], working_directory="files").get_matching_files()
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(files, "files", output="out")
+        strip_files(files, "files", output="out", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "MissingClose.java" in errors[0] and "1" in errors[0]
 
@@ -105,7 +111,7 @@ def test_log_wrong_close_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCapture
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["WrongClose.java"], working_directory="files").get_matching_files()
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(files, "files", output="out")
+        strip_files(files, "files", output="out", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "WrongClose.java" in errors[0] and "3" in errors[0]
 
@@ -114,7 +120,7 @@ def test_log_missing_open_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptur
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["MissingOpen.java"], working_directory="files").get_matching_files()
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(files, "files")
+        strip_files(files, "files", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "MissingOpen.java" in errors[0] and "1" in errors[0]
 
@@ -123,7 +129,7 @@ def test_log_invalid_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixt
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["InvalidTag.java"], working_directory="files").get_matching_files()
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(files, "files", output="out")
+        strip_files(files, "files", output="out", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "InvalidTag.java" in errors[0] and "2" in errors[0]
 
@@ -133,7 +139,7 @@ def test_fail_on_error(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptur
     files = FileUtils(["**/*.java"], working_directory="files").get_matching_files()
 
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        with pytest.raises(Exception):
+        with pytest.raises(StripError):
             strip_files(files, "files", output="out", fail_on_error=True)
             errors = [rec.message for rec in caplog.records]
             assert len(errors) == 4
@@ -174,3 +180,127 @@ def test_project_with_binary_include(monkeypatch: pytest.MonkeyPatch):
 
     stripped = strip_files(files, "testproject", output="out",binary=UnexpectedInputOptions.INCLUDE)
     assert "test.jpg" in stripped
+
+
+def _write_mixed_files(tmp_path: Path, bad_name: str, bad_content: bytes):
+    (tmp_path / "a.java").write_text("class A {}\n")
+    (tmp_path / bad_name).write_bytes(bad_content)
+    (tmp_path / "c.java").write_text("class C {}\n")
+    return ["a.java", bad_name, "c.java"]
+
+
+@pytest.mark.parametrize("bad_name,bad_content,option", [
+    ("b.unknownext", b"content", "unknown_extension"),
+    ("b.bin", b"\xff\xfe\xfd\x80", "binary"),
+])
+def test_fail_continues_with_remaining_files(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture,
+                                             tmp_path: Path, bad_name: str, bad_content: bytes, option: str):
+    monkeypatch.chdir(tmp_path)
+    files = _write_mixed_files(tmp_path, bad_name, bad_content)
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        stripped = strip_files(files, ".", output="out", fail_on_error=False, **{option: UnexpectedInputOptions.FAIL})
+    assert sorted(stripped) == ["a.java", "c.java"]
+    assert (tmp_path / "out" / "c.java").is_file()
+    assert len([rec for rec in caplog.records if rec.levelno == logging.ERROR]) == 1
+
+
+@pytest.mark.parametrize("bad_name,bad_content,option", [
+    ("b.unknownext", b"content", "unknown_extension"),
+    ("b.bin", b"\xff\xfe\xfd\x80", "binary"),
+])
+def test_fail_raises_after_processing_when_fail_on_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+                                                         bad_name: str, bad_content: bytes, option: str):
+    monkeypatch.chdir(tmp_path)
+    files = _write_mixed_files(tmp_path, bad_name, bad_content)
+    with pytest.raises(StripError, match="errors stripping"):
+        strip_files(files, ".", output="out", fail_on_error=True, **{option: UnexpectedInputOptions.FAIL})
+    assert (tmp_path / "out" / "a.java").is_file()
+    assert (tmp_path / "out" / "c.java").is_file()
+
+
+def test_comments_option_is_not_kept_between_calls(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.custom").write_text("class A {\n    int x;!!cs:remove\n}\n")
+    monkeypatch.chdir(tmp_path)
+    assert strip_files(["a.custom"], ".", output="out", comments=[".custom:!!"]) == ["a.custom"]
+    assert strip_files(["a.custom"], ".", output="out", unknown_extension=UnexpectedInputOptions.IGNORE) == []
+
+
+def test_error_log_contains_line_of_range_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture,
+                                              tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n//cs:remove:start\n//cs:remove:end\n}\n")
+    monkeypatch.chdir(tmp_path)
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        strip_files(["a.java"], ".", output="out", fail_on_error=False)
+    assert [rec.message for rec in caplog.records if rec.levelno == logging.ERROR][0].startswith("a.java:2: ")
+
+
+def test_non_ascii_content_is_kept(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    content = "class A {\n    String s = \"é ✓ 日本\";\n    int x;//cs:remove\n}\n"
+    (tmp_path / "a.java").write_bytes(content.encode("utf-8"))
+    monkeypatch.chdir(tmp_path)
+    strip_files(["a.java"], ".", output="out")
+    expected = "class A {\n    String s = \"é ✓ 日本\";\n}\n"
+    # Read as text: on Windows the newlines are written as \r\n, which is not what is tested here
+    assert (tmp_path / "out" / "a.java").read_text(encoding="utf-8") == expected
+
+
+def test_files_are_opened_as_utf8(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """Without an explicit encoding the result depends on the platform (e.g. cp1252 on Windows)"""
+    (tmp_path / "a.java").write_text("class A {}\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    real_open = builtins.open
+    encodings = []
+
+    def spy(file, mode="r", *args, **kwargs):
+        if "b" not in mode:
+            encodings.append(kwargs.get("encoding"))
+        return real_open(file, mode, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", spy)
+    strip_files(["a.java"], ".", output="out")
+    monkeypatch.undo()
+    assert encodings == ["utf-8", "utf-8"]
+
+
+def test_fail_on_error_is_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n//cs:remove:start\n//cs:remove:end\n}\n")
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(StripError):
+        strip_files(["a.java"], ".", output="out")
+
+
+def test_output_directory_is_skipped(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n    int x;//cs:remove\n}\n")
+    (tmp_path / "out").mkdir()
+    (tmp_path / "out" / "a.java").write_text("class Old {}\n")
+    monkeypatch.chdir(tmp_path)
+    files = FileUtils(["**/*.java"]).get_matching_files()
+    assert sorted(files) == [os.path.join("a.java"), os.path.join("out", "a.java")]
+    assert strip_files(files, ".", output="out") == ["a.java"]
+    assert not (tmp_path / "out" / "out").exists()
+    assert (tmp_path / "out" / "a.java").read_text() == "class A {\n}\n"
+
+
+def test_output_directory_is_working_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n    int x;//cs:remove\n}\n")
+    monkeypatch.chdir(tmp_path)
+    assert strip_files(["a.java"], ".", output=".") == ["a.java"]
+    assert (tmp_path / "a.java").read_text() == "class A {\n}\n"
+
+
+def test_output_directory_outside_working_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "project").mkdir()
+    (tmp_path / "project" / "a.java").write_text("class A {}\n")
+    monkeypatch.chdir(tmp_path)
+    assert strip_files(["a.java"], "project", output="project_out") == ["a.java"]
+    assert (tmp_path / "project_out" / "a.java").is_file()
+
+
+def test_dry_run_does_not_copy_binary_file(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture,
+                                           tmp_path: Path):
+    (tmp_path / "image.bin").write_bytes(b"\xff\xfe\xfd\x80")
+    monkeypatch.chdir(tmp_path)
+    stripped = strip_files(["image.bin"], ".", output="out", dry_run=True, binary=UnexpectedInputOptions.INCLUDE)
+    assert stripped == ["image.bin"]
+    assert capsys.readouterr().out == "==> image.bin <==\n(binary file, copied unchanged)\n"
+    assert not (tmp_path / "out").exists()

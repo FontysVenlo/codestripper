@@ -1,10 +1,19 @@
 import argparse
 import os
-from typing import List
 
 from codestripper.code_stripper import strip_files
 from codestripper.utils import FileUtils, set_logger_level, get_working_directory
+from codestripper.utils.comments import parse_comment
 from codestripper.utils.enums import UnexpectedInputOptions
+
+
+def comment_argument(value: str) -> str:
+    """Argparse type that validates a comment specification, the specification itself is parsed later"""
+    try:
+        parse_comment(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error))
+    return value
 
 
 def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
@@ -13,9 +22,9 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("include", nargs="+", help="files to include for code stripping (multiple files or glob)")
     # Add optional arguments
     parser.add_argument("-x", "--exclude", action="append",
-                        help="files to include for code stripping (glob)", default=[])
-    parser.add_argument("-c", "--comment", action="append",
-                        help="comment symbol(s) for the given language, usage: <extension>:<comment> (e.g. .java://")
+                        help="files to exclude for code stripping (glob)", default=[])
+    parser.add_argument("-c", "--comment", action="append", type=comment_argument,
+                        help="comment symbol(s) for the given language, usage: <extension>:<open>[:<close>] (e.g. .java://)")
     parser.add_argument("-v", "--verbosity", action="count", help="increase output verbosity", default=0)
     parser.add_argument("-o", "--output", action="store",
                         help="output directory to store the stripped files", default="out")
@@ -27,9 +36,10 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
                         help="set the working directory for include/exclude", default=os.getcwd())
     parser.add_argument("-e", "--fail-on-error", action="store_false",
                         help="Fail if an error occurs during code stripping")
-    parser.add_argument("-b", "--binary", choices=list(UnexpectedInputOptions), default=UnexpectedInputOptions.FAIL,
+    unexpected_choices = [option.value for option in UnexpectedInputOptions]
+    parser.add_argument("-b", "--binary", choices=unexpected_choices, default=UnexpectedInputOptions.FAIL.value,
                         action="store", help="What to do if binary file is matched")
-    parser.add_argument("-u", "--unknown", choices=list(UnexpectedInputOptions), default=UnexpectedInputOptions.FAIL,
+    parser.add_argument("-u", "--unknown", choices=unexpected_choices, default=UnexpectedInputOptions.FAIL.value,
                         action="store", help="What to do if a file with unknown extension is matched")
 
 
@@ -46,9 +56,13 @@ def main() -> None:
     set_logger_level(logger_name, args.verbosity)
 
     # Find the files, based on the command line arguments
-    cwd = get_working_directory(args.working_directory)
+    try:
+        cwd = get_working_directory(args.working_directory)
+    except ValueError as error:
+        parser.error(str(error))
     files = FileUtils(args.include, args.exclude, cwd, args.recursive, logger_name).get_matching_files()
     # Strip all the files
 
     strip_files(files, cwd, comments=args.comment, output=args.output, dry_run=args.dry_run,
-                fail_on_error=args.fail_on_error)
+                fail_on_error=args.fail_on_error, binary=UnexpectedInputOptions(args.binary),
+                unknown_extension=UnexpectedInputOptions(args.unknown))

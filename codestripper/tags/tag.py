@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Type, Union, List, Pattern, Iterable, Optional
+from typing import Type, List, Iterable, Optional
 
 from codestripper.utils.comments import Comment
 
@@ -23,6 +23,9 @@ class TagData:
 
 
 class Tag:
+    # Why the tag is not valid (if `is_valid` returns False), used in the error message
+    invalid_reason: str = ""
+
     def __init__(self) -> None:
         self._offset = 0
 

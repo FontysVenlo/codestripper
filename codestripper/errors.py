@@ -1,6 +1,19 @@
 from codestripper.tags.tag import Tag, RangeTag, SingleTag
 
 
+def _line_number(tag: Tag) -> int:
+    """The line the tag is on, for a range this is the line of the open tag"""
+    if isinstance(tag, SingleTag):
+        return tag.data.line_number
+    if isinstance(tag, RangeTag):
+        return tag.open_tag.data.line_number
+    return -1
+
+
+class StripError(Exception):
+    """Raised when stripping one or more files failed, the details are logged"""
+
+
 class InvalidTagError(Exception):
     """Raise if the tag is not valid"""
     def __init__(self, tag: Tag):
@@ -8,9 +21,7 @@ class InvalidTagError(Exception):
 
     @property
     def line_number(self) -> int:
-        if isinstance(self.tag, SingleTag):
-            return self.tag.data.line_number
-        return -1
+        return _line_number(self.tag)
 
     @property
     def message(self) -> str:
@@ -20,7 +31,10 @@ class InvalidTagError(Exception):
         return self.__repr__()
 
     def __repr__(self):
-        return f"Tag {self.tag.__class__.__name__} is invalid"
+        message = f"Tag {self.tag.__class__.__name__} is invalid"
+        if self.tag.invalid_reason:
+            message += f": {self.tag.invalid_reason}"
+        return message
 
 
 class TokenizerError(Exception):
@@ -31,7 +45,4 @@ class TokenizerError(Exception):
 
     @property
     def line_number(self) -> int:
-        if isinstance(self.tag, SingleTag):
-            return self.tag.data.line_number
-        else:
-            return -1
+        return _line_number(self.tag)
