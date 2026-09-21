@@ -72,3 +72,24 @@ def test_symlink_outside_is_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     monkeypatch.chdir(inside)
     with pytest.raises(ValueError, match="is not inside the current directory"):
         get_working_directory("link")
+
+
+def test_does_not_change_current_directory(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_data_dir)
+
+    def fail_on_chdir(path):
+        raise AssertionError("The current directory should not be changed")
+
+    monkeypatch.setattr(os, "chdir", fail_on_chdir)
+    files = FileUtils(["*.java"], ["*.txt"], working_directory="data/recursive").get_matching_files()
+    assert len(files) == 1
+    assert os.getcwd() == str(test_data_dir)
+
+
+def test_glob_characters_in_working_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    special = tmp_path / "dir[1]"
+    special.mkdir()
+    (special / "a.java").write_text("class A {}")
+    monkeypatch.chdir(tmp_path)
+    files = FileUtils(["*.java"], working_directory="dir[1]").get_matching_files()
+    assert set(files) == {"a.java"}

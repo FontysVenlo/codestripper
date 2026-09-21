@@ -38,17 +38,17 @@ class FileUtils:
         else:
             self.excluded = excluded
         self.recursive = recursive
-        self.old_cwd = os.getcwd()
         self.cwd = get_working_directory(working_directory)
 
     def __get_normalized_files(self, file_names: Iterable[str], relative_to: Path, recursive=True) -> \
             Generator[str, None, None]:
         for file_name in file_names:
-            path = os.path.join(self.cwd, file_name)
+            # Only the given file name is a glob pattern, so escape the working directory to match it literally
+            path = os.path.join(glob.escape(self.cwd), file_name)
             for file in glob.glob(path, recursive=recursive):
-                tmp = Path(file).relative_to(relative_to)
-                if tmp.is_file():
-                    yield str(tmp)
+                # The found file is absolute, so no need to change the current directory to check it
+                if Path(file).is_file():
+                    yield str(Path(file).relative_to(relative_to))
 
     def __convert_to_paths_set(self, file_names: Iterable[str], recursive=True) -> Set[str]:
         """Convert the file name(s) that are passed as CLI arguments to file paths (can contain GLOB)"""
@@ -59,11 +59,9 @@ class FileUtils:
 
     def get_matching_files(self) -> Iterable[str]:
         """Get files that fulfill requirements, match included and do not match excluded"""
-        os.chdir(self.cwd)
         included_files = self.__convert_to_paths_set(self.included, self.recursive)
         self.logger.debug(f"Included files are: {included_files}")
 
         excluded_files = self.__convert_to_paths_set(self.excluded, self.recursive)
         self.logger.debug(f"Excluded files are: {excluded_files}")
-        os.chdir(self.old_cwd)
         return included_files - excluded_files
