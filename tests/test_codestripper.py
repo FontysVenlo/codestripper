@@ -174,3 +174,39 @@ def test_project_with_binary_include(monkeypatch: pytest.MonkeyPatch):
 
     stripped = strip_files(files, "testproject", output="out",binary=UnexpectedInputOptions.INCLUDE)
     assert "test.jpg" in stripped
+
+
+def _write_mixed_files(tmp_path: Path, bad_name: str, bad_content: bytes):
+    (tmp_path / "a.java").write_text("class A {}\n")
+    (tmp_path / bad_name).write_bytes(bad_content)
+    (tmp_path / "c.java").write_text("class C {}\n")
+    return ["a.java", bad_name, "c.java"]
+
+
+@pytest.mark.parametrize("bad_name,bad_content,option", [
+    ("b.unknownext", b"content", "unknown_extension"),
+    ("b.bin", b"\xff\xfe\xfd\x80", "binary"),
+])
+def test_fail_continues_with_remaining_files(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture,
+                                             tmp_path: Path, bad_name: str, bad_content: bytes, option: str):
+    monkeypatch.chdir(tmp_path)
+    files = _write_mixed_files(tmp_path, bad_name, bad_content)
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        stripped = strip_files(files, ".", output="out", fail_on_error=False, **{option: UnexpectedInputOptions.FAIL})
+    assert sorted(stripped) == ["a.java", "c.java"]
+    assert (tmp_path / "out" / "c.java").is_file()
+    assert len([rec for rec in caplog.records if rec.levelno == logging.ERROR]) == 1
+
+
+@pytest.mark.parametrize("bad_name,bad_content,option", [
+    ("b.unknownext", b"content", "unknown_extension"),
+    ("b.bin", b"\xff\xfe\xfd\x80", "binary"),
+])
+def test_fail_raises_after_processing_when_fail_on_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+                                                         bad_name: str, bad_content: bytes, option: str):
+    monkeypatch.chdir(tmp_path)
+    files = _write_mixed_files(tmp_path, bad_name, bad_content)
+    with pytest.raises(Exception, match="errors stripping"):
+        strip_files(files, ".", output="out", fail_on_error=True, **{option: UnexpectedInputOptions.FAIL})
+    assert (tmp_path / "out" / "a.java").is_file()
+    assert (tmp_path / "out" / "c.java").is_file()
