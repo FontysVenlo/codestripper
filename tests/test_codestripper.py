@@ -265,3 +265,30 @@ def test_fail_on_error_is_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     monkeypatch.chdir(tmp_path)
     with pytest.raises(StripError):
         strip_files(["a.java"], ".", output="out")
+
+
+def test_output_directory_is_skipped(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n    int x;//cs:remove\n}\n")
+    (tmp_path / "out").mkdir()
+    (tmp_path / "out" / "a.java").write_text("class Old {}\n")
+    monkeypatch.chdir(tmp_path)
+    files = FileUtils(["**/*.java"]).get_matching_files()
+    assert sorted(files) == [os.path.join("a.java"), os.path.join("out", "a.java")]
+    assert strip_files(files, ".", output="out") == ["a.java"]
+    assert not (tmp_path / "out" / "out").exists()
+    assert (tmp_path / "out" / "a.java").read_text() == "class A {\n}\n"
+
+
+def test_output_directory_is_working_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n    int x;//cs:remove\n}\n")
+    monkeypatch.chdir(tmp_path)
+    assert strip_files(["a.java"], ".", output=".") == ["a.java"]
+    assert (tmp_path / "a.java").read_text() == "class A {\n}\n"
+
+
+def test_output_directory_outside_working_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "project").mkdir()
+    (tmp_path / "project" / "a.java").write_text("class A {}\n")
+    monkeypatch.chdir(tmp_path)
+    assert strip_files(["a.java"], "project", output="project_out") == ["a.java"]
+    assert (tmp_path / "project_out" / "a.java").is_file()

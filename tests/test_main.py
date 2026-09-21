@@ -86,3 +86,12 @@ def test_main_working_directory_outside(monkeypatch: pytest.MonkeyPatch, capsys:
         with pytest.raises(SystemExit):
             main()
     assert "is not inside the current directory" in capsys.readouterr().err
+
+
+def test_main_twice_does_not_strip_output(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {}\n")
+    monkeypatch.chdir(tmp_path)
+    for _ in range(2):
+        with patch.object(sys, 'argv', ["codestripper", "**/*.java"]):
+            main()
+    assert sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.java")) == ["a.java", "out/a.java"]

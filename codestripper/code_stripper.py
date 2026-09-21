@@ -23,10 +23,17 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
 
     cwd = get_working_directory(working_directory)
     out = os.path.join(os.getcwd(), output)
+    # Files in the output directory are the result of an earlier run, so they should not be stripped again.
+    # Only relevant if the output directory is a subdirectory of the working directory (not the directory itself)
+    real_out = Path(os.path.realpath(out))
+    skip_output_directory = real_out != Path(cwd) and real_out.is_relative_to(cwd)
 
     stripped_files: List[str] = []
     has_errors: bool = False
     for file in files:
+        if skip_output_directory and Path(cwd, file).is_relative_to(real_out):
+            logger.debug(f"Skipping '{file}', it is in the output directory")
+            continue
         try:
             with open(os.path.join(cwd, file), 'r', encoding='utf-8') as handle:
                 content = handle.read()
