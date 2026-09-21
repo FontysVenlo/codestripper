@@ -61,6 +61,8 @@ from codestripper.code_stripper import strip_files
 stripped = strip_files(["src/Test.java"], working_directory=".", output="out", dry_run=False)
 ```
 
+`strip_files` returns the files that were stripped. Files that fail (e.g. an invalid tag) are logged and the other files are still processed, after which a `StripError` is raised. Pass `fail_on_error=False` to only log the errors, like the `-e` flag of the command line tool.
+
 ## Examples
 
 This section contains examples for all supported tags.

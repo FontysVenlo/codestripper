@@ -101,7 +101,7 @@ def test_log_missing_close_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptu
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["MissingClose.java"], working_directory="files").get_matching_files()
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(files, "files", output="out")
+        strip_files(files, "files", output="out", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "MissingClose.java" in errors[0] and "1" in errors[0]
 
@@ -110,7 +110,7 @@ def test_log_wrong_close_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCapture
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["WrongClose.java"], working_directory="files").get_matching_files()
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(files, "files", output="out")
+        strip_files(files, "files", output="out", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "WrongClose.java" in errors[0] and "3" in errors[0]
 
@@ -119,7 +119,7 @@ def test_log_missing_open_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptur
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["MissingOpen.java"], working_directory="files").get_matching_files()
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(files, "files")
+        strip_files(files, "files", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "MissingOpen.java" in errors[0] and "1" in errors[0]
 
@@ -128,7 +128,7 @@ def test_log_invalid_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixt
     monkeypatch.chdir(test_project_dir)
     files = FileUtils(["InvalidTag.java"], working_directory="files").get_matching_files()
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(files, "files", output="out")
+        strip_files(files, "files", output="out", fail_on_error=False)
         errors = [rec.message for rec in caplog.records]
         assert len(errors) == 1 and "InvalidTag.java" in errors[0] and "2" in errors[0]
 
@@ -228,7 +228,7 @@ def test_error_log_contains_line_of_range_tag(monkeypatch: pytest.MonkeyPatch, c
     (tmp_path / "a.java").write_text("class A {\n//cs:remove:start\n//cs:remove:end\n}\n")
     monkeypatch.chdir(tmp_path)
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        strip_files(["a.java"], ".", output="out")
+        strip_files(["a.java"], ".", output="out", fail_on_error=False)
     assert [rec.message for rec in caplog.records if rec.levelno == logging.ERROR][0].startswith("a.java:2: ")
 
 
@@ -258,3 +258,10 @@ def test_files_are_opened_as_utf8(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     strip_files(["a.java"], ".", output="out")
     monkeypatch.undo()
     assert encodings == ["utf-8", "utf-8"]
+
+
+def test_fail_on_error_is_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n//cs:remove:start\n//cs:remove:end\n}\n")
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(StripError):
+        strip_files(["a.java"], ".", output="out")

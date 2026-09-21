@@ -16,7 +16,7 @@ logger = logging.getLogger("codestripper")
 
 
 def strip_files(files: Iterable[str], working_directory: Union[str, None] = None, * ,comments: Optional[List[str]] = None,
-                output: Union[Path, str] = "out", dry_run: bool = False, fail_on_error: bool = False,
+                output: Union[Path, str] = "out", dry_run: bool = False, fail_on_error: bool = True,
                 binary: UnexpectedInputOptions = UnexpectedInputOptions.FAIL, unknown_extension: UnexpectedInputOptions = UnexpectedInputOptions.FAIL) -> List[str]:
 
     mapping = get_comments_mapping(comments)
