@@ -126,3 +126,35 @@ def test_invalid_tag():
 def test_data():
     data = TagData("test", 0, 0, 0, 0, 0, 0, 0, "//")
     assert str(data).__contains__("test")
+
+
+def test_invalid_range_tag_reports_line_and_reason():
+    case = "line 1\n//cs:remove:start\n//cs:remove:end\n"
+    with pytest.raises(InvalidTagError) as ex:
+        CodeStripper(case, Comment("//")).strip()
+    assert ex.value.line_number == 2
+    assert "RemoveRangeTag" in ex.value.message and "does not contain any lines" in ex.value.message
+
+
+def test_invalid_legacy_range_tag_reports_line():
+    case = "line 1\nline 2\n//Start Solution::replacewith::\n//End Solution::replacewith::\n"
+    with pytest.raises(InvalidTagError) as ex:
+        CodeStripper(case, Comment("//")).strip()
+    assert ex.value.line_number == 3
+
+
+def test_invalid_single_tag_reports_line_and_reason():
+    case = "line 1\nline 2\n//cs:ignore\n"
+    with pytest.raises(InvalidTagError) as ex:
+        CodeStripper(case, Comment("//")).strip()
+    assert ex.value.line_number == 3
+    assert "only allowed on the first line" in ex.value.message
+
+
+def test_tokenizer_error_line_numbers():
+    with pytest.raises(TokenizerError) as ex:
+        CodeStripper("a\nb\n//cs:remove:start\nc\n", Comment("//")).strip()
+    assert ex.value.line_number == 3
+    with pytest.raises(TokenizerError) as ex:
+        CodeStripper("a\n//cs:remove:end\n", Comment("//")).strip()
+    assert ex.value.line_number == 2

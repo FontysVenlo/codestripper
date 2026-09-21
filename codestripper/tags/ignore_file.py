@@ -5,6 +5,7 @@ from codestripper.tags.tag import SingleTag, TagData
 
 
 class IgnoreFileTag(SingleTag):
+    invalid_reason = "the ignore tag is only allowed on the first line"
     regex = r'cs:ignore'
 
     def __init__(self, data: TagData) -> None:

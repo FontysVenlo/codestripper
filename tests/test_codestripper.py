@@ -8,6 +8,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from codestripper.code_stripper import strip_files
+from codestripper.errors import StripError
 from codestripper.utils import FileUtils
 from codestripper.utils.enums import UnexpectedInputOptions
 
@@ -136,7 +137,7 @@ def test_fail_on_error(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptur
     files = FileUtils(["**/*.java"], working_directory="files").get_matching_files()
 
     with caplog.at_level(logging.ERROR, logger='codestripper'):
-        with pytest.raises(Exception):
+        with pytest.raises(StripError):
             strip_files(files, "files", output="out", fail_on_error=True)
             errors = [rec.message for rec in caplog.records]
             assert len(errors) == 4
@@ -209,7 +210,7 @@ def test_fail_raises_after_processing_when_fail_on_error(monkeypatch: pytest.Mon
                                                          bad_name: str, bad_content: bytes, option: str):
     monkeypatch.chdir(tmp_path)
     files = _write_mixed_files(tmp_path, bad_name, bad_content)
-    with pytest.raises(Exception, match="errors stripping"):
+    with pytest.raises(StripError, match="errors stripping"):
         strip_files(files, ".", output="out", fail_on_error=True, **{option: UnexpectedInputOptions.FAIL})
     assert (tmp_path / "out" / "a.java").is_file()
     assert (tmp_path / "out" / "c.java").is_file()
@@ -220,3 +221,11 @@ def test_comments_option_is_not_kept_between_calls(monkeypatch: pytest.MonkeyPat
     monkeypatch.chdir(tmp_path)
     assert strip_files(["a.custom"], ".", output="out", comments=[".custom:!!"]) == ["a.custom"]
     assert strip_files(["a.custom"], ".", output="out", unknown_extension=UnexpectedInputOptions.IGNORE) == []
+
+
+def test_error_log_contains_line_of_range_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n//cs:remove:start\n//cs:remove:end\n}\n")
+    monkeypatch.chdir(tmp_path)
+    with caplog.at_level(logging.ERROR, logger='codestripper'):
+        strip_files(["a.java"], ".", output="out")
+    assert [rec.message for rec in caplog.records if rec.levelno == logging.ERROR][0].startswith("a.java:2: ")

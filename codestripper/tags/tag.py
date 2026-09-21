@@ -23,6 +23,9 @@ class TagData:
 
 
 class Tag:
+    # Why the tag is not valid (if `is_valid` returns False), used in the error message
+    invalid_reason: str = ""
+
     def __init__(self) -> None:
         self._offset = 0
 

@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Union, Iterable, List, Optional
 
-from codestripper.errors import InvalidTagError, TokenizerError
+from codestripper.errors import InvalidTagError, StripError, TokenizerError
 from codestripper.tags import IgnoreFileError
 from codestripper.tags.tag import Tag, RangeTag
 from codestripper.tokenizer import Tokenizer
@@ -83,7 +83,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                 with open(path, 'w+') as handle:
                     handle.write(stripped)
     if has_errors and fail_on_error:
-        raise Exception("There were errors stripping some files, see log for details")
+        raise StripError("There were errors stripping some files, see log for details")
     return stripped_files
 
 

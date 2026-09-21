@@ -36,6 +36,7 @@ class LegacyCloseTag(RangeCloseTag):
 
 
 class LegacyRangeTag(RangeTag):
+    invalid_reason = "the range does not contain any lines"
 
     def __init__(self, open_tag: LegacyOpenTag, close_tag: LegacyCloseTag) -> None:
         super().__init__(open_tag, close_tag)
