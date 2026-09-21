@@ -57,7 +57,10 @@ def main() -> None:
     set_logger_level(logger_name, args.verbosity)
 
     # Find the files, based on the command line arguments
-    cwd = get_working_directory(args.working_directory)
+    try:
+        cwd = get_working_directory(args.working_directory)
+    except ValueError as error:
+        parser.error(str(error))
     files = FileUtils(args.include, args.exclude, cwd, args.recursive, logger_name).get_matching_files()
     # Strip all the files
 

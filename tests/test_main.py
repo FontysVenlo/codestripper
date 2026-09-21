@@ -77,3 +77,12 @@ def test_main_invalid_comment(monkeypatch: pytest.MonkeyPatch, capsys: pytest.Ca
         with pytest.raises(SystemExit):
             main()
     assert "Invalid comment" in capsys.readouterr().err
+
+
+def test_main_working_directory_outside(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture):
+    monkeypatch.chdir(test_project_dir)
+    args = ["codestripper", "-w", "..", "*.java"]
+    with patch.object(sys, 'argv', args):
+        with pytest.raises(SystemExit):
+            main()
+    assert "is not inside the current directory" in capsys.readouterr().err

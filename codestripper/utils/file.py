@@ -6,15 +6,21 @@ from typing import Dict, Generator, Iterable, Set, Union, List
 
 
 def get_working_directory(working_directory: Union[str, None]) -> str:
-    if working_directory is not None:
-        if os.path.isabs(working_directory):
-            cwd = working_directory
-        else:
-            cwd = str(os.path.join(os.getcwd(), working_directory))
-        Path(cwd).relative_to(os.getcwd())
-        return cwd
-    else:
-        return os.getcwd()
+    """
+    Get the absolute working directory, which should be (a subdirectory of) the current working directory
+
+    :raises ValueError: if the working directory is not inside the current working directory
+    """
+    current = os.path.realpath(os.getcwd())
+    if working_directory is None:
+        return current
+    # Resolve '..' and symbolic links first, so they cannot be used to escape the current directory
+    cwd = os.path.realpath(os.path.join(current, working_directory))
+    try:
+        Path(cwd).relative_to(current)
+    except ValueError:
+        raise ValueError(f"Working directory '{working_directory}' is not inside the current directory '{current}'")
+    return cwd
 
 
 class FileUtils:

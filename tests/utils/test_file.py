@@ -39,7 +39,36 @@ def test_cwd(monkeypatch: pytest.MonkeyPatch):
     assert len(files) == 1
 
 
-def test_non_relative(monkeypatch: pytest.MonkeyPatch):
+def test_cwd_default(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(test_data_dir)
-    with pytest.raises(ValueError) as ex:
-        get_working_directory("/etc/passwd")
+    assert get_working_directory(None) == os.path.realpath(test_data_dir)
+
+
+def test_cwd_absolute_inside(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_data_dir)
+    inside = test_data_dir / "data" / "recursive"
+    assert get_working_directory(str(inside)) == os.path.realpath(inside)
+
+
+def test_cwd_normalizes_inside_path(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_data_dir)
+    assert get_working_directory("data/recursive/..") == os.path.realpath(test_data_dir / "data")
+
+
+@pytest.mark.parametrize("path", ["/etc/passwd", "..", "../other", "data/../../other"])
+def test_non_relative(path: str, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.chdir(test_data_dir)
+    with pytest.raises(ValueError, match="is not inside the current directory"):
+        get_working_directory(path)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="creating symbolic links requires extra privileges on Windows")
+def test_symlink_outside_is_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    inside = tmp_path / "inside"
+    inside.mkdir()
+    (inside / "link").symlink_to(outside, target_is_directory=True)
+    monkeypatch.chdir(inside)
+    with pytest.raises(ValueError, match="is not inside the current directory"):
+        get_working_directory("link")
