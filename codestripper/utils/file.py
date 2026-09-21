@@ -2,7 +2,7 @@ import glob
 import os
 import logging
 from pathlib import Path
-from typing import Dict, Generator, Iterable, Set, Union, List
+from typing import Generator, Iterable, Set, Union
 
 
 def get_working_directory(working_directory: Union[str, None]) -> str:

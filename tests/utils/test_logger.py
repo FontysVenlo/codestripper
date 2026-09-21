@@ -18,7 +18,8 @@ from codestripper.utils import ColourFormatter, set_logger_level
 )
 def test_colour_formatter(level: int, name: str, control: bool):
     formatter = ColourFormatter()
-    record = LogRecord(name="test", level=level, pathname="testpath", lineno=0, msg="Test message", args=None, exc_info=None)
+    record = LogRecord(name="test", level=level, pathname="testpath", lineno=0, msg="Test message", args=None,
+                       exc_info=None)
     formatted = formatter.format(record)
     contains_name = name in formatted
     contains_control = '\x1b[' in formatted

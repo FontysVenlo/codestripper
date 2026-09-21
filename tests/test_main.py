@@ -17,7 +17,8 @@ test_project_dir = os.path.join(Path(__file__).parent.absolute())
 def test_main(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
     monkeypatch.chdir(test_project_dir)
     shutil.rmtree("out", ignore_errors=True)
-    args = ["filename", "-c", ".test:!!", "-c", ".cs:#", "-x", "*.class", "-vv", "-o", "out", "-w", "testproject", "**/*.java"]
+    args = ["filename", "-c", ".test:!!", "-c", ".cs:#", "-x", "*.class", "-vv", "-o", "out", "-w", "testproject",
+            "**/*.java"]
     with patch.object(sys, 'argv', args):
         with caplog.at_level(logging.INFO, logger='codestripper'):
             main()
@@ -94,4 +95,5 @@ def test_main_twice_does_not_strip_output(monkeypatch: pytest.MonkeyPatch, tmp_p
     for _ in range(2):
         with patch.object(sys, 'argv', ["codestripper", "**/*.java"]):
             main()
-    assert sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.java")) == ["a.java", "out/a.java"]
+    found = sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.java"))
+    assert found == ["a.java", "out/a.java"]

@@ -1,6 +1,5 @@
 import argparse
 import os
-from typing import List
 
 from codestripper.code_stripper import strip_files
 from codestripper.utils import FileUtils, set_logger_level, get_working_directory

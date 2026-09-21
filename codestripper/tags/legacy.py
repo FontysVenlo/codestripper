@@ -45,8 +45,5 @@ class LegacyRangeTag(RangeTag):
         return self.end - self.start > 0
 
     def execute(self, content: str) -> Union[str, None]:
-        # old_open_size = self.open_tag.end - self.open_tag.start
-        # open = self.open_tag.execute(content, offset)
-        # offset += (len(open) - old_open_size)
         return None
 

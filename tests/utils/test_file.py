@@ -19,12 +19,14 @@ test_data_dir = Path(__file__).parent.absolute()
         (["**/*.java"], ["data/recursive/*.java"], False, ["data/test1.java"]),
         (["**/*.java"], ["data/*.java"], True, ["data/recursive/test2.java"]),
         (["**/*.java"], ["data/*.java"], False, []),
-        (["data/**/*"], [], True, ["data/test1.java", "data/test1.txt", "data/test2.txt", "data/recursive/test2.java", "data/recursive/test3.txt"]),
+        (["data/**/*"], [], True, ["data/test1.java", "data/test1.txt", "data/test2.txt", "data/recursive/test2.java",
+                                   "data/recursive/test3.txt"]),
         (["data/test1*"], [], True, ["data/test1.java", "data/test1.txt"]),
         (["data/test1*"], ["**/*.txt"], True, ["data/test1.java"])
     ]
 )
-def test_glob(included: List[str], excluded: List[str], recursive: bool, expected: List[Path], monkeypatch: pytest.MonkeyPatch):
+def test_glob(included: List[str], excluded: List[str], recursive: bool, expected: List[Path],
+              monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(test_data_dir)
     expected_paths = [str(Path(path)) for path in expected]
     files = FileUtils(included, excluded, working_directory=None, recursive=recursive).get_matching_files()

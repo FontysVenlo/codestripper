@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Type, Union, List, Pattern, Iterable, Optional
+from typing import Type, List, Iterable, Optional
 
 from codestripper.utils.comments import Comment
 

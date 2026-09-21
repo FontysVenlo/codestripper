@@ -50,7 +50,7 @@ class Tokenizer:
         self.ordered_tags: List[Tag] = []
         self.open_stack: List[RangeOpenTag] = []
         self.range_stack: Dict[int, Optional[List[Tag]]] = {}
-        if not str(comment) in Tokenizer.mapping_cache:
+        if str(comment) not in Tokenizer.mapping_cache:
             Tokenizer.mapping_cache[str(comment)] = calculate_mappings(default_tags, comment)
         self.mappings: CreateTagMapping
         self.regex: Pattern
@@ -82,8 +82,6 @@ class Tokenizer:
         if len(self.open_stack) != 0:
             t = self.open_stack[0]
             raise TokenizerError(t, f"There is still an unclosed {t.__class__.__name__} tag!")
-        # if len(self.range_stack) != 0:
-        #     raise TokenizerError(self.range_stack[0][0], f"")
         return self.ordered_tags
 
     def __add_range_stack(self, index: int, tag: Tag) -> None:
@@ -96,10 +94,13 @@ class Tokenizer:
             self.open_stack.append(tag)
         elif isinstance(tag, RangeCloseTag):
             if len(self.open_stack) == 0:
-                raise TokenizerError(tag, f"Cannot close tag {tag.__class__.__name__}, as there is no matching open tag")
+                raise TokenizerError(
+                    tag, f"Cannot close tag {tag.__class__.__name__}, as there is no matching open tag")
             range_open = self.open_stack.pop()
             if range_open.parent != tag.parent:
-                raise TokenizerError(tag, f"Cannot match closing tag: {tag.__class__.__name__} to open tag: {range_open.__class__.__name__}")
+                raise TokenizerError(
+                    tag, f"Cannot match closing tag: {tag.__class__.__name__} "
+                         f"to open tag: {range_open.__class__.__name__}")
             range_tag: RangeTag = tag.parent(range_open, tag)
             index = len(self.open_stack)
             embedded = self.range_stack.pop(index + 1, None)
@@ -130,7 +131,6 @@ class Tokenizer:
         else:
             parameter_start = command_end
             parameter_end = command_start
-        parameter = line[parameter_start:parameter_end]
         return TagData(line=line,
                        line_number=line_number,
                        line_start=line_start,

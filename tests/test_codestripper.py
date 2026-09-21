@@ -21,7 +21,8 @@ def test_project_with_unknown_extension_fail(monkeypatch: pytest.MonkeyPatch):
     files = FileUtils(["**/*.java", "pom.xml", "**/*.test"], working_directory="testproject").get_matching_files()
 
     with pytest.raises(Exception):
-        strip_files(files, "testproject", output="out",unknown_extension=UnexpectedInputOptions.FAIL, fail_on_error=True)
+        strip_files(files, "testproject", output="out", unknown_extension=UnexpectedInputOptions.FAIL,
+                    fail_on_error=True)
 
 
 def test_project_with_unknown_extension_ignore(monkeypatch: pytest.MonkeyPatch):
@@ -224,7 +225,8 @@ def test_comments_option_is_not_kept_between_calls(monkeypatch: pytest.MonkeyPat
     assert strip_files(["a.custom"], ".", output="out", unknown_extension=UnexpectedInputOptions.IGNORE) == []
 
 
-def test_error_log_contains_line_of_range_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture, tmp_path: Path):
+def test_error_log_contains_line_of_range_tag(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture,
+                                              tmp_path: Path):
     (tmp_path / "a.java").write_text("class A {\n//cs:remove:start\n//cs:remove:end\n}\n")
     monkeypatch.chdir(tmp_path)
     with caplog.at_level(logging.ERROR, logger='codestripper'):

@@ -17,9 +17,7 @@ def test_replace_empty():
     case = """
     asd//cs:replace:
     """
-    expected = """
-    
-    """
+    expected = "\n    \n    "  # The replacement is empty, the whitespace in front of the tag is kept
     output = CodeStripper(case, Comment("//")).strip()
     assert output == expected, "Replace should replace with empty string keeping whitespace"
 
