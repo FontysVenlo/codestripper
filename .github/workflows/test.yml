@@ -4,9 +4,9 @@ defaults:
   run:
     shell: bash
 
+# Only on pull requests: main only changes through squash-merged PRs, which
+# have already passed these checks.
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -19,7 +19,7 @@ jobs:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Install uv
       uses: astral-sh/setup-uv@v10.1.0
       with:
@@ -30,7 +30,7 @@ jobs:
     - name: Run tests
       run: uv run pytest --cov --cov-report=xml --junitxml=tests.xml
     - name: Test Report
-      uses: dorny/test-reporter@v1
+      uses: dorny/test-reporter@v3
       if: success() || failure()
       with:
         name: Test Results (Python version ${{ matrix.python-version }})
@@ -43,7 +43,7 @@ jobs:
         python-version: [ "3.12" ]
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v10.1.0
         with:
@@ -73,7 +73,7 @@ jobs:
         python-version: [ "3.12" ]
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v10.1.0
         with:
