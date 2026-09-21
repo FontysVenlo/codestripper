@@ -26,14 +26,14 @@ jobs:
       version: ${{ steps.semantic.outputs.new_release_version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # semantic-release walks back to the previous tag to decide the bump,
           # so a shallow clone makes it compute the wrong version.
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
 
