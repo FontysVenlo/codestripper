@@ -294,3 +294,13 @@ def test_output_directory_outside_working_directory(monkeypatch: pytest.MonkeyPa
     monkeypatch.chdir(tmp_path)
     assert strip_files(["a.java"], "project", output="project_out") == ["a.java"]
     assert (tmp_path / "project_out" / "a.java").is_file()
+
+
+def test_dry_run_does_not_copy_binary_file(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture,
+                                           tmp_path: Path):
+    (tmp_path / "image.bin").write_bytes(b"\xff\xfe\xfd\x80")
+    monkeypatch.chdir(tmp_path)
+    stripped = strip_files(["image.bin"], ".", output="out", dry_run=True, binary=UnexpectedInputOptions.INCLUDE)
+    assert stripped == ["image.bin"]
+    assert capsys.readouterr().out == "==> image.bin <==\n(binary file, copied unchanged)\n"
+    assert not (tmp_path / "out").exists()

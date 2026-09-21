@@ -47,10 +47,14 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                 logger.info(f"Ignoring binary file: '{file}'")
                 continue
             else:
-                path = os.path.join(out, file)
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                shutil.copy2(os.path.join(cwd, file), path)
                 stripped_files.append(file)
+                if dry_run:
+                    print(f"==> {file} <==")
+                    print("(binary file, copied unchanged)")
+                else:
+                    path = os.path.join(out, file)
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    shutil.copy2(os.path.join(cwd, file), path)
                 continue
         stripped = ""
         try:
