@@ -1,3 +1,4 @@
+import builtins
 import logging
 import os.path
 import re
@@ -229,3 +230,31 @@ def test_error_log_contains_line_of_range_tag(monkeypatch: pytest.MonkeyPatch, c
     with caplog.at_level(logging.ERROR, logger='codestripper'):
         strip_files(["a.java"], ".", output="out")
     assert [rec.message for rec in caplog.records if rec.levelno == logging.ERROR][0].startswith("a.java:2: ")
+
+
+def test_non_ascii_content_is_kept(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    content = "class A {\n    String s = \"é ✓ 日本\";\n    int x;//cs:remove\n}\n"
+    (tmp_path / "a.java").write_bytes(content.encode("utf-8"))
+    monkeypatch.chdir(tmp_path)
+    strip_files(["a.java"], ".", output="out")
+    expected = "class A {\n    String s = \"é ✓ 日本\";\n}\n"
+    # Read as text: on Windows the newlines are written as \r\n, which is not what is tested here
+    assert (tmp_path / "out" / "a.java").read_text(encoding="utf-8") == expected
+
+
+def test_files_are_opened_as_utf8(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """Without an explicit encoding the result depends on the platform (e.g. cp1252 on Windows)"""
+    (tmp_path / "a.java").write_text("class A {}\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    real_open = builtins.open
+    encodings = []
+
+    def spy(file, mode="r", *args, **kwargs):
+        if "b" not in mode:
+            encodings.append(kwargs.get("encoding"))
+        return real_open(file, mode, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", spy)
+    strip_files(["a.java"], ".", output="out")
+    monkeypatch.undo()
+    assert encodings == ["utf-8", "utf-8"]
