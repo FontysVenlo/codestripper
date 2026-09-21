@@ -80,7 +80,9 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                 continue
             stripped_files.append(file)
             if dry_run:
-                logger.info(stripped)
+                # A dry run has no other output, so print instead of log (logging depends on the verbosity)
+                print(f"==> {file} <==")
+                print(stripped, end="" if stripped.endswith("\n") else "\n")
             else:
                 path = os.path.join(out, file)
                 os.makedirs(os.path.dirname(path), exist_ok=True)

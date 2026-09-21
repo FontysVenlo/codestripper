@@ -32,7 +32,7 @@ CodeStripper can be used as a Python Module and as a command line tool. The comm
 | -o | --output | the output directory to store the stripped files | out | False |
 | -r | --recursive | do NOT use recursive globs for include/exclude | True | False |
 | -v | --verbosity | increase output verbosity (can be repeated) | 0 | False |
-| -d | --dry-run | execute a dry run, no output is written | False | False |
+| -d | --dry-run | execute a dry run, prints the stripped files (with a `==> <file> <==` header) to stdout instead of writing them | False | False |
 | -w | --working-directory | set the working directory for include/exclude | pwd | False |
 | -e | --fail-on-error | do NOT fail if an error occurs during code stripping | fail on error | False |
 | -b | --binary | what to do if a binary file is matched: `fail`, `ignore` or `include` | fail | False |

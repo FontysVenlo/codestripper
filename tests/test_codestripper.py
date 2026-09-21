@@ -36,18 +36,21 @@ def test_project_with_unknown_extension_include(monkeypatch: pytest.MonkeyPatch)
     assert "test.test" in stripped
 
 
-def test_project(monkeypatch: pytest.MonkeyPatch, caplog: LogCaptureFixture):
+def test_project(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture):
     monkeypatch.chdir(test_project_dir)
-    with caplog.at_level(logging.INFO, logger='codestripper'):
-        files = FileUtils(["testproject/**/*.java", "testproject/pom.xml"]).get_matching_files()
-        strip_files(files, dry_run=True)
-        stripped = [rec.message for rec in caplog.records]
-        tags_in_content = False
-        for content in stripped:
-            if content.__contains__("//cs:"):
-                tags_in_content = True
-                break
-        assert len(stripped) == 6 and not tags_in_content
+    files = FileUtils(["testproject/**/*.java", "testproject/pom.xml"]).get_matching_files()
+    stripped_files = strip_files(files, dry_run=True)
+    output = capsys.readouterr().out
+    assert output.count("==> ") == 5 and len(stripped_files) == 5
+    assert "//cs:" not in output
+
+
+def test_dry_run_writes_nothing(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, tmp_path: Path):
+    (tmp_path / "a.java").write_text("class A {\n    int x;//cs:remove\n}\n")
+    monkeypatch.chdir(tmp_path)
+    strip_files(["a.java"], ".", output="out", dry_run=True)
+    assert capsys.readouterr().out == "==> a.java <==\nclass A {\n}\n"
+    assert not (tmp_path / "out").exists()
 
 
 def test_project_out(monkeypatch: pytest.MonkeyPatch):
