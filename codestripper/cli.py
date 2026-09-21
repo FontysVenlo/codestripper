@@ -4,7 +4,17 @@ from typing import List
 
 from codestripper.code_stripper import strip_files
 from codestripper.utils import FileUtils, set_logger_level, get_working_directory
+from codestripper.utils.comments import parse_comment
 from codestripper.utils.enums import UnexpectedInputOptions
+
+
+def comment_argument(value: str) -> str:
+    """Argparse type that validates a comment specification, the specification itself is parsed later"""
+    try:
+        parse_comment(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error))
+    return value
 
 
 def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
@@ -13,9 +23,9 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("include", nargs="+", help="files to include for code stripping (multiple files or glob)")
     # Add optional arguments
     parser.add_argument("-x", "--exclude", action="append",
-                        help="files to include for code stripping (glob)", default=[])
-    parser.add_argument("-c", "--comment", action="append",
-                        help="comment symbol(s) for the given language, usage: <extension>:<comment> (e.g. .java://")
+                        help="files to exclude for code stripping (glob)", default=[])
+    parser.add_argument("-c", "--comment", action="append", type=comment_argument,
+                        help="comment symbol(s) for the given language, usage: <extension>:<open>[:<close>] (e.g. .java://)")
     parser.add_argument("-v", "--verbosity", action="count", help="increase output verbosity", default=0)
     parser.add_argument("-o", "--output", action="store",
                         help="output directory to store the stripped files", default="out")

@@ -68,3 +68,12 @@ def test_main_invalid_choice(monkeypatch: pytest.MonkeyPatch):
     with patch.object(sys, 'argv', args):
         with pytest.raises(SystemExit):
             main()
+
+
+@pytest.mark.parametrize("comment", [".java", "java://", ".java:"])
+def test_main_invalid_comment(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, comment: str):
+    args = ["codestripper", "-c", comment, "test.java"]
+    with patch.object(sys, 'argv', args):
+        with pytest.raises(SystemExit):
+            main()
+    assert "Invalid comment" in capsys.readouterr().err

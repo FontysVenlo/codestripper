@@ -213,3 +213,10 @@ def test_fail_raises_after_processing_when_fail_on_error(monkeypatch: pytest.Mon
         strip_files(files, ".", output="out", fail_on_error=True, **{option: UnexpectedInputOptions.FAIL})
     assert (tmp_path / "out" / "a.java").is_file()
     assert (tmp_path / "out" / "c.java").is_file()
+
+
+def test_comments_option_is_not_kept_between_calls(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    (tmp_path / "a.custom").write_text("class A {\n    int x;!!cs:remove\n}\n")
+    monkeypatch.chdir(tmp_path)
+    assert strip_files(["a.custom"], ".", output="out", comments=[".custom:!!"]) == ["a.custom"]
+    assert strip_files(["a.custom"], ".", output="out", unknown_extension=UnexpectedInputOptions.IGNORE) == []

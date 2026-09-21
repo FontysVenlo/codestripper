@@ -9,7 +9,7 @@ from codestripper.tags import IgnoreFileError
 from codestripper.tags.tag import Tag, RangeTag
 from codestripper.tokenizer import Tokenizer
 from codestripper.utils import get_working_directory
-from codestripper.utils.comments import comments_mapping, Comment
+from codestripper.utils.comments import get_comments_mapping, Comment
 from codestripper.utils.enums import UnexpectedInputOptions
 
 logger = logging.getLogger("codestripper")
@@ -19,13 +19,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                 output: Union[Path, str] = "out", dry_run: bool = False, fail_on_error: bool = False,
                 binary: UnexpectedInputOptions = UnexpectedInputOptions.FAIL, unknown_extension: UnexpectedInputOptions = UnexpectedInputOptions.FAIL) -> List[str]:
 
-    if comments is not None:
-        for comment in comments:
-            parts = comment.split(":")
-            if len(parts) == 2:
-                comments_mapping[parts[0]] = Comment(parts[1])
-            else:
-                comments_mapping[parts[0]] = Comment(parts[1], parts[2])
+    mapping = get_comments_mapping(comments)
 
     cwd = get_working_directory(working_directory)
     out = os.path.join(os.getcwd(), output)
@@ -55,7 +49,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
             try:
                 _, file_extension = os.path.splitext(file)
                 file_extension = file_extension.lower()
-                if not file_extension in comments_mapping:
+                if file_extension not in mapping:
                     if unknown_extension == UnexpectedInputOptions.FAIL:
                         logger.error(f"{file}: unknown extension: '{file_extension}', "
                                      f"please specify which comment to use for this file extension.")
@@ -68,7 +62,7 @@ def strip_files(files: Iterable[str], working_directory: Union[str, None] = None
                         # Keep the complete content
                         stripped = content
                 else:
-                    com = comments_mapping[file_extension]
+                    com = mapping[file_extension]
                     stripped = CodeStripper(content, com).strip()
             except IgnoreFileError:
                 logger.info(f"File '{file}' is ignored, because of ignore tag")

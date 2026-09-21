@@ -28,7 +28,7 @@ CodeStripper can be used as a Python Module and as a command line tool. The comm
 |----------|------|-------------|---------------|----------|
 | `<positional>` | None | files to include for code stripping (glob) | None | True |
 | -x | --exclude | files to exclude for code stripping (glob), can be repeated | None | False |
-| -c | --comment | comment symbol(s) for a file extension, format `<extension>:<open>` or `<extension>:<open>:<close>` (e.g. `.java://`), can be repeated | built-in mapping (see below) | False |
+| -c | --comment | comment symbol(s) for a file extension, format `<extension>:<open>` or `<extension>:<open>:<close>` (e.g. `.java://`), the extension starts with a `.` and is case-insensitive, can be repeated | built-in mapping (see below) | False |
 | -o | --output | the output directory to store the stripped files | out | False |
 | -r | --recursive | do NOT use recursive globs for include/exclude | True | False |
 | -v | --verbosity | increase output verbosity (can be repeated) | 0 | False |
