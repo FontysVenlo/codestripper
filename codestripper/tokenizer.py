@@ -41,21 +41,20 @@ def calculate_mappings(tags: Set[Type[SingleTag]], comment: Comment) -> Tuple[Cr
 
 
 class Tokenizer:
+    # Only the (expensive) calculation is shared between tokenizers, the state of a tokenizer is per instance
     mapping_cache: Dict[str, Tuple[CreateTagMapping, Pattern]] = {}
-    mappings: CreateTagMapping = {}
-    regex: Pattern = re.compile("")
-    comment: Comment
 
     def __init__(self, content: str, comment: Comment) -> None:
         self.content = content
+        self.comment = comment
         self.ordered_tags: List[Tag] = []
         self.open_stack: List[RangeOpenTag] = []
         self.range_stack: Dict[int, Optional[List[Tag]]] = {}
-        Tokenizer.comment = comment
         if not str(comment) in Tokenizer.mapping_cache:
             Tokenizer.mapping_cache[str(comment)] = calculate_mappings(default_tags, comment)
-        Tokenizer.mappings = Tokenizer.mapping_cache[str(comment)][0]
-        Tokenizer.regex = Tokenizer.mapping_cache[str(comment)][1]
+        self.mappings: CreateTagMapping
+        self.regex: Pattern
+        self.mappings, self.regex = Tokenizer.mapping_cache[str(comment)]
         self.group_count = self.regex.groups
 
     def tokenize(self) -> List[Tag]:
@@ -78,7 +77,7 @@ class Tokenizer:
                 continue  # All groups should be named
             else:
                 data = self.__create_tag_data(self.content, line_number, line_start, line_end, match, parameter)
-                tag = Tokenizer.mappings[kind](data)
+                tag = self.mappings[kind](data)
                 self.__handle_tag(tag)
         if len(self.open_stack) != 0:
             t = self.open_stack[0]
