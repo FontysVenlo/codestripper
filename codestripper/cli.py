@@ -27,9 +27,10 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
                         help="set the working directory for include/exclude", default=os.getcwd())
     parser.add_argument("-e", "--fail-on-error", action="store_false",
                         help="Fail if an error occurs during code stripping")
-    parser.add_argument("-b", "--binary", choices=list(UnexpectedInputOptions), default=UnexpectedInputOptions.FAIL,
+    unexpected_choices = [option.value for option in UnexpectedInputOptions]
+    parser.add_argument("-b", "--binary", choices=unexpected_choices, default=UnexpectedInputOptions.FAIL.value,
                         action="store", help="What to do if binary file is matched")
-    parser.add_argument("-u", "--unknown", choices=list(UnexpectedInputOptions), default=UnexpectedInputOptions.FAIL,
+    parser.add_argument("-u", "--unknown", choices=unexpected_choices, default=UnexpectedInputOptions.FAIL.value,
                         action="store", help="What to do if a file with unknown extension is matched")
 
 
@@ -51,4 +52,5 @@ def main() -> None:
     # Strip all the files
 
     strip_files(files, cwd, comments=args.comment, output=args.output, dry_run=args.dry_run,
-                fail_on_error=args.fail_on_error)
+                fail_on_error=args.fail_on_error, binary=UnexpectedInputOptions(args.binary),
+                unknown_extension=UnexpectedInputOptions(args.unknown))
