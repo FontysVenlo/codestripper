@@ -26,3 +26,21 @@ def test_ignored_file_closing():
     case = "<!--cs:ignore-->"
     with pytest.raises(IgnoreFileError):
         CodeStripper(case, Comment("<!--", "-->")).strip()
+
+
+@pytest.mark.parametrize("case", [
+    "//cs:ignore some explanation\nclass A {}\n",
+    "//cs:ignore \nclass A {}\n",
+])
+def test_ignored_file_with_trailing_text(case: str):
+    with pytest.raises(IgnoreFileError):
+        CodeStripper(case, Comment("//")).strip()
+
+
+@pytest.mark.parametrize("case", [
+    "//cs:ignored\nclass A {}\n",
+    "//cs:ignore_this\nclass A {}\n",
+    "//cs:ignore:something\nclass A {}\n",
+])
+def test_not_an_ignore_tag(case: str):
+    assert CodeStripper(case, Comment("//")).strip() == case
