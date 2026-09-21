@@ -283,3 +283,15 @@ default_tags: Set[Type[SingleTag]] = {
 }
 ```
 > :warning: **Only the `SingleTag`(s) (including `RangeOpenTag` and `RangeCloseTag`) need to be added, not the `RangeTag`** 
+## Releases
+
+Releases are automated with [semantic-release](https://semantic-release.gitbook.io/). Pull requests are squash merged, so the PR title becomes the commit on `main` and must follow [Conventional Commits](https://www.conventionalcommits.org/) (checked on every PR):
+
+| PR title | Release |
+|----------|---------|
+| `fix: ...` | patch (1.2.3 → 1.2.4) |
+| `feat: ...` | minor (1.2.3 → 1.3.0) |
+| `feat!: ...` or a `BREAKING CHANGE:` footer | major (1.2.3 → 2.0.0) |
+| `docs:`, `chore:`, `ci:`, `build:`, `refactor:`, `test:`, `style:`, `perf:` | no release |
+
+On every merge to `main` the next version is determined, tagged (`vX.Y.Z`), a GitHub release is created and the package is published to PyPI. The version is set during the build and is not committed, so the version in `pyproject.toml` is not the released version.
