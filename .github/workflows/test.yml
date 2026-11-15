@@ -10,45 +10,88 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 jobs:
+  # Skip the tests if a PR only changes documentation. The jobs are skipped instead of the whole workflow
+  # (paths-ignore), because a required check that never reports blocks the PR, see the 'tests' job.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          files=$(gh pr diff "$PR" --name-only --repo "$REPO")
+          echo "Changed files:"
+          echo "$files"
+          code=false
+          # Fail safe: run the tests if the changed files cannot be determined
+          [ -z "$files" ] && code=true
+          while IFS= read -r file; do
+            case "$file" in
+              *.md|LICENSE|.github/ISSUE_TEMPLATE/*) ;;
+              *) code=true ;;
+            esac
+          done <<< "$files"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      checks: write
     steps:
     - uses: actions/checkout@v7
-    - name: Install uv
+    - name: Install uv and Python ${{ matrix.python-version }}
       uses: astral-sh/setup-uv@v10.3.3
       with:
         python-version: ${{ matrix.python-version }}
         enable-cache: true
+        cache-dependency-glob: "uv.lock"
+        cache-suffix: py${{ matrix.python-version }}
     - name: Install dependencies
       run: uv sync --locked
     - name: Run tests
       run: uv run pytest --cov --cov-report=xml --junitxml=tests.xml
     - name: Test Report
-      uses: dorny/test-reporter@v3
+      uses: mikepenz/action-junit-report@v6
       if: success() || failure()
       with:
-        name: Test Results (Python version ${{ matrix.python-version }})
-        path: tests.xml
-        reporter: java-junit
+        check_name: Test Results (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+        report_paths: tests.xml
 
   coverage:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       matrix:
         python-version: [ "3.12" ]
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v7
-      - name: Install uv
+      - name: Install uv and Python ${{ matrix.python-version }}
         uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          cache-suffix: coverage
       - name: Install dependencies
         run: uv sync --locked
       - name: Run tests
@@ -65,21 +108,40 @@ jobs:
           output: both
           thresholds: '90 95'
       - name: Output Code Coverage (Python version ${{ matrix.python-version }})
-        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+        run: cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
 
   typecheck:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       matrix:
         python-version: [ "3.12" ]
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v7
-      - name: Install uv
+      - name: Install uv and Python ${{ matrix.python-version }}
         uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          cache-suffix: typecheck
       - name: Install dependencies
         run: uv sync --locked
       - name: Type checker
         run: uv run mypy codestripper
+
+  # The only required check (next to the PR title): succeeds if all tests passed or were skipped because only
+  # documentation changed. Skipped matrix jobs don't report their individual checks (e.g. 'test (3.12, ...)').
+  tests:
+    if: always()
+    needs: [changes, test, coverage, typecheck]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All tests passed or were skipped
+        env:
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS"
+          [ "$FAILED" = "false" ]
