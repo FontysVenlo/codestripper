@@ -35,7 +35,7 @@ def add_commandline_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-w", "--working-directory", action="store",
                         help="set the working directory for include/exclude", default=os.getcwd())
     parser.add_argument("-e", "--fail-on-error", action="store_false",
-                        help="Fail if an error occurs during code stripping")
+                        help="do NOT fail if an error occurs during code stripping")
     unexpected_choices = [option.value for option in UnexpectedInputOptions]
     parser.add_argument("-b", "--binary", choices=unexpected_choices, default=UnexpectedInputOptions.FAIL.value,
                         action="store", help="What to do if binary file is matched")

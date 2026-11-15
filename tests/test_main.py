@@ -10,6 +10,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from codestripper.cli import main
+from codestripper.errors import StripError
 
 test_project_dir = os.path.join(Path(__file__).parent.absolute())
 
@@ -97,3 +98,27 @@ def test_main_twice_does_not_strip_output(monkeypatch: pytest.MonkeyPatch, tmp_p
             main()
     found = sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.java"))
     assert found == ["a.java", "out/a.java"]
+
+
+def test_main_help_fail_on_error(capsys: pytest.CaptureFixture):
+    with patch.object(sys, 'argv', ["codestripper", "--help"]):
+        with pytest.raises(SystemExit):
+            main()
+    # argparse wraps the help text, so compare without the line breaks
+    help_text = " ".join(capsys.readouterr().out.split())
+    assert "-e, --fail-on-error do NOT fail if an error occurs during code stripping" in help_text
+
+
+def test_main_fails_on_error_by_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    shutil.copy(os.path.join(test_project_dir, "files", "MissingClose.java"), tmp_path)
+    monkeypatch.chdir(tmp_path)
+    with patch.object(sys, 'argv', ["codestripper", "MissingClose.java"]):
+        with pytest.raises(StripError):
+            main()
+
+
+def test_main_fail_on_error_flag_does_not_fail(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    shutil.copy(os.path.join(test_project_dir, "files", "MissingClose.java"), tmp_path)
+    monkeypatch.chdir(tmp_path)
+    with patch.object(sys, 'argv', ["codestripper", "-e", "MissingClose.java"]):
+        main()
