@@ -40,14 +40,14 @@ jobs:
       version: ${{ steps.semantic.outputs.new_release_version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # semantic-release walks back to the previous tag to decide the bump,
           # so a shallow clone makes it compute the wrong version.
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -59,7 +59,7 @@ jobs:
       # release-notes-generator uses.
       - name: Semantic release
         id: semantic
-        uses: cycjimmy/semantic-release-action@v6.0.0
+        uses: cycjimmy/semantic-release-action@v8.1.4
         with:
           extra_plugins: |
             conventional-changelog-conventionalcommits@9
@@ -102,13 +102,13 @@ jobs:
     if: always() && needs.version.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       # No cache: a release is built from a clean environment.
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.1.0
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
           enable-cache: false
@@ -147,7 +147,7 @@ jobs:
           path: dist/
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.1.0
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: false
 
